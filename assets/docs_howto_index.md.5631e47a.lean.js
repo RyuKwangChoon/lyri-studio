@@ -1,0 +1,1 @@
+import{_ as e,c as o,o as t,a as s}from"./app.e10345c6.js";const f=JSON.parse('{"title":"\u{1F4D8} How to Use","description":"","frontmatter":{},"headers":[],"relativePath":"docs/howto/index.md"}'),i={name:"docs/howto/index.md"},a=s("",4),r=[a];function d(c,n,_,l,h,p){return t(),o("div",null,r)}const m=e(i,[["render",d]]);export{f as __pageData,m as default};
