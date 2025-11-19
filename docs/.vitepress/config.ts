@@ -88,6 +88,7 @@ export default defineConfig({
         {
           text: '2025 Dev Logs',
           items: [
+            { text: 'Homepage Masterflow v2', link: '/blog/2025/troubleshooting_guide.md' },
             { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2.md' },
             { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log.md' },
             { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
