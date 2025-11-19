@@ -50,7 +50,7 @@ fatal: unable to access ...
 ### ✅ 해결 방법
 workflow에 아래 권한 추가:
 
-```yml
+```yaml
 permissions:
   contents: write
 ```
@@ -67,7 +67,7 @@ Error: No language registration for 'yaml'
 ```
 
 ### 🧾 원인
-- 코드블록에 ```yaml 형태가 아니라 ```yml 이라고 잘못 입력된 경우
+- 코드블록에 ```yaml 형태가 아니라 ```yaml 이라고 잘못 입력된 경우
 - VitePress/Prism이 해당 언어를 인식하지 못함
 
 ### ✅ 해결 방법
@@ -95,7 +95,7 @@ GitHub → Settings → Pages
 
 #### ② 빌드 결과물이 `dist`가 아니라 다른 폴더를 바라보고 있음
 workflow 설정 확인:
-```yml
+```yaml
 publish_dir: ./docs/.vitepress/dist
 ```
 
@@ -135,7 +135,7 @@ Could not resolve './deploy.md'
 ### ✅ 해결 방법
 workflow에서 명시적으로 Node 버전 지정:
 
-```yml
+```yaml
 - uses: actions/setup-node@v3
   with:
     node-version: 18
