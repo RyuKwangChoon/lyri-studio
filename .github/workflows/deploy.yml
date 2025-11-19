@@ -1,5 +1,8 @@
 name: Deploy VitePress Site
 
+permissions:
+  contents: write     # 🔥 GitHub Actions가 gh-pages 브랜치에 push할 수 있도록 허용
+
 on:
   push:
     branches:
