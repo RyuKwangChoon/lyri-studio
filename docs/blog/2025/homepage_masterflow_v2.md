@@ -1,4 +1,4 @@
-# 🧭 Lyri × Brian Studio [http://localhost:5173/]
+# 🧭 Lyri × Brian Studio 
 # 홈페이지 전체 작업 순서 (마스터 플로우) v0.2  
 _“구조 → 틀 → 요약 → 상세 → 배포 → 확장 → 완성”_
 

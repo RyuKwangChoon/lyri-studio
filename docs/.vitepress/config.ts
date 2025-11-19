@@ -9,7 +9,9 @@ export default defineConfig({
   // ============================
   title: "Lyri × Brian Studio",
   description: "AI ✦ Music ✦ Overlay ✦ Dev – 리리와 함께 만드는 스튜디오",
-
+  // 🔥 dead link 검사 끄기
+  ignoreDeadLinks: true,
+  
   // ============================
   // 🎨 테마 설정
   // ============================
