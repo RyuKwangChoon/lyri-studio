@@ -26,7 +26,7 @@ _최종 업데이트: 2025-11-20_
 
 ### 기본 workflow
 
-```yml
+```yaml
 name: Deploy VitePress Site
 on:
   push:
