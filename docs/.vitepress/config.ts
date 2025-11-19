@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 import './theme/custom.css'
 
 export default defineConfig({
+  base: '/lyri-studio/',
   // ============================
   // 🌐 사이트 기본 정보
   // ============================
@@ -11,7 +12,7 @@ export default defineConfig({
   description: "AI ✦ Music ✦ Overlay ✦ Dev – 리리와 함께 만드는 스튜디오",
   // 🔥 dead link 검사 끄기
   ignoreDeadLinks: true,
-  
+
   // ============================
   // 🎨 테마 설정
   // ============================
