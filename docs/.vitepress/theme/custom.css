@@ -1,0 +1,219 @@
+/* =========================================================
+   Lyri × Brian Studio — Global Theme Style (v1.0, Final)
+   ========================================================= */
+
+/* -----------------------------------------
+   🎨 브랜드 컬러 · 전역 변수
+----------------------------------------- */
+:root {
+  --vp-c-brand: #3cb371;
+  --vp-c-brand-dark: #2b8b56;
+  --vp-c-bg: #fafcff;
+}
+
+/* 다크모드시 VitePress 내부 변수가 자동 교체됨 */
+.dark {
+  --vp-c-bg: #111;
+}
+
+/* -----------------------------------------
+   📝 기본 스타일
+----------------------------------------- */
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+    Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.65;
+  background: var(--vp-c-bg);
+}
+
+a {
+  color: var(--vp-c-brand);
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+a:hover {
+  color: var(--vp-c-brand-dark);
+}
+
+/* -----------------------------------------
+   🎨 버튼 스타일
+----------------------------------------- */
+.btn-primary {
+  background: var(--vp-c-brand);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: inline-block;
+  transition: 0.2s ease;
+}
+.btn-primary:hover {
+  background: var(--vp-c-brand-dark);
+}
+
+/* -----------------------------------------
+   🗂 공통 카드 컴포넌트 (Lyri Card)
+----------------------------------------- */
+.lyri-card {
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+  background: #ffffff;
+  text-align: center;
+  transition: 0.25s ease;
+}
+.lyri-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+/* 카드 타이틀 */
+.lyri-card-title {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #1f2937 !important; /* 라이트 */
+  font-weight: 700;
+}
+.dark .lyri-card-title {
+  color: #f3f4f6 !important; /* 다크 */
+}
+
+/* 카드 설명 */
+.lyri-card-desc {
+  font-size: 0.95rem;
+  color: #555;
+}
+.dark .lyri-card-desc {
+  color: #cfcfcf;
+}
+
+/* 카드 내부 버튼 */
+.lyri-card-btn {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 8px 18px;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: 0.2s ease;
+}
+
+/* 버튼 색상 */
+.lyri-btn-green { background: #3cb371; }
+.lyri-btn-green:hover { background: #35a568; }
+
+.lyri-btn-purple { background: #6c63ff; }
+.lyri-btn-purple:hover { background: #5b53e8; }
+
+.lyri-btn-blue { background: #4B9CD3; }
+.lyri-btn-blue:hover { background: #3c8fcb; }
+
+/* -----------------------------------------
+   🟦 홈 화면 전용 카드 (Home Cards)
+----------------------------------------- */
+.home-section {
+  margin-top: 70px;
+  padding: 20px;
+}
+
+.home-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.home-card {
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  text-align: center;
+  transition: 0.2s ease;
+}
+.home-card:hover {
+  border-color: var(--vp-c-brand);
+  transform: translateY(-3px);
+}
+
+.home-card-title {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: var(--vp-c-text-1);
+  font-weight: 700;
+}
+
+.home-card-desc {
+  font-size: 0.95rem;
+  color: var(--vp-c-text-2);
+}
+
+/* 홈 버튼 */
+.home-btn {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 8px 18px;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: 0.2s ease;
+}
+.home-btn.green { background: #3cb371; }
+.home-btn.green:hover { background: #2f9e62; }
+
+.home-btn.purple { background: #6c63ff; }
+.home-btn.purple:hover { background: #5b53e3; }
+
+.home-btn.blue { background: #4B9CD3; }
+.home-btn.blue:hover { background: #3a8ec1; }
+
+/* -----------------------------------------
+   🟫 Hero / Navbar 보정
+----------------------------------------- */
+.VPNavBarTitle {
+  font-weight: 700 !important;
+  color: #2b4eff !important;
+}
+
+h1 {
+  color: #2b4eff;
+}
+
+.VPHero .name {
+  color: var(--vp-c-brand) !important;
+}
+.VPHero .text {
+  color: #555 !important;
+}
+
+/* -----------------------------------------
+   🖤 다크 모드 보정
+----------------------------------------- */
+.dark body {
+  background: #111;
+  color: #e5e5e5;
+}
+
+.dark a {
+  color: #89d6a3;
+}
+
+.dark .btn-primary {
+  background: #2b8b56;
+}
+
+/* footer 보정 */
+.dark .lyri-footer {
+  background: #111;
+  color: #dcdcdc;
+  border-top-color: #333;
+}
+.dark .footer-links a {
+  color: #89d6a3;
+}
+.dark .footer-links a:hover {
+  color: #6dbf8d;
+}
