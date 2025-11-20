@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 import './theme/custom.css'
 
 export default defineConfig({
-  base: '/lyri-studio/',
+  base: '/',
   // ============================
   // 🌐 사이트 기본 정보
   // ============================
