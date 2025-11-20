@@ -91,6 +91,7 @@ export default defineConfig({
             { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide.md' },
             { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2.md' },
             { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log.md' },
+            { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide.md' },
             { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
           ]
         }

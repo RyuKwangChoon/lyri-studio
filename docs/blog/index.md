@@ -11,6 +11,7 @@ Lyri × Brian Studio에서 진행한
 - [Troubleshooting Guide](/blog/2025/troubleshooting_guide)
 - [Homepage Masterflow v2](/blog/2025/homepage_masterflow_v2)
 - [Homepage Build Log](/blog/2025/homepage-build-log.md)  
+- [PWA Install Guide](/blog/2025/pwa_install_guide)
 - [Overlay Dev Log](/blog/2025/overlay-dev-log.md)
 
 ---
