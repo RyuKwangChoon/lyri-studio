@@ -90,7 +90,9 @@ export default defineConfig({
           items: [
             { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log.md' },
             { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
-          ],
+          ]
+        },
+        {  
           text: '2025 Schedule & Tips',
           items: [
             { text: 'Schedule Log ', link: '/blog/2025/schedule_log.md' },
