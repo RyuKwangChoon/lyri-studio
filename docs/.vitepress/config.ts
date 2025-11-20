@@ -88,11 +88,15 @@ export default defineConfig({
         {
           text: '2025 Dev Logs',
           items: [
-            { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide.md' },
-            { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2.md' },
             { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log.md' },
-            { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide.md' },
             { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
+          ],
+          text: '2025 Schedule & Tips',
+          items: [
+            { text: 'Schedule Log ', link: '/blog/2025/schedule_log.md' },
+            { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2.md' },
+            { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide.md' },
+            { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide.md' },
           ]
         }
       ],
