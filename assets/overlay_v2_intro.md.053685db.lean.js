@@ -1,0 +1,1 @@
+import{_ as e,c as t,o as a,a as r}from"./app.292886b0.js";const u=JSON.parse('{"title":"Overlay v2 \uC18C\uAC1C","description":"","frontmatter":{},"headers":[],"relativePath":"overlay/v2/intro.md"}'),o={name:"overlay/v2/intro.md"},i=r("",4),l=[i];function n(_,s,c,d,v,p){return a(),t("div",null,l)}const f=e(o,[["render",n]]);export{u as __pageData,f as default};
