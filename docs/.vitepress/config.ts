@@ -92,7 +92,7 @@ export default defineConfig({
             { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
           ]
         },
-        {  //[Overlay v2.8 Github Guide](/blog/2025/overlay_2.8_github_guide)
+        {  // [Overlay v3 Planning](/blog/2025/Overlay_v3_Planning)
           text: '2025 Schedule & Tips',
           items: [
             { text: 'Schedule Log ', link: '/blog/2025/schedule_log.md' },
@@ -100,6 +100,7 @@ export default defineConfig({
             { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide.md' },
             { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide.md' },
             { text: 'Overlay v2.8 Github Guide', link: '/blog/2025/overlay_2.8_github_guide.md' },
+            { text: 'Overlay v3 Planning', link: '/blog/2025/Overlay_v3_Planning.md' },
           ]
         }
       ],

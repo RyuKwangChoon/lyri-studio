@@ -15,7 +15,7 @@ Lyri × Brian Studio에서 진행한
 - [PWA Install Guide](/blog/2025/pwa_install_guide)
 - [Troubleshooting Guide](/blog/2025/troubleshooting_guide)
 - [Overlay v2.8 Github Guide](/blog/2025/overlay_2.8_github_guide)
-
+- [Overlay v3 Planning](/blog/2025/Overlay_v3_Planning)
 ---
 
 ## 🌱 목적
