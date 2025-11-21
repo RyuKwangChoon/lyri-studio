@@ -16,6 +16,7 @@ Lyri × Brian Studio에서 진행한
 - [Troubleshooting Guide](/blog/2025/troubleshooting_guide)
 - [Overlay v2.8 Github Guide](/blog/2025/overlay_2.8_github_guide)
 - [Overlay v3 Planning](/blog/2025/Overlay_v3_Planning)
+- [Overlay v3 Instrall Guide](/blog/2025/lyri-overlay-v3_install_guide)
 ---
 
 ## 🌱 목적
