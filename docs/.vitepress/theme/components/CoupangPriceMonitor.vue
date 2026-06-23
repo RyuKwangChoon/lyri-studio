@@ -183,32 +183,20 @@ function parseCsvLines(text: string) {
 
     if (!line || isCsvHeader(line)) continue
 
-    let url = ''
-    let memo = ''
+    const match = line.match(/^(https?:\/\/[^\s,]+)[\t ,]*(.*)$/i)
 
-    const firstComma = line.indexOf(',')
+    if (!match) continue
 
-    if (firstComma >= 0) {
-      url = stripCsvCell(line.slice(0, firstComma))
-      memo = stripCsvCell(line.slice(firstComma + 1))
-    } else {
-      // TSV/엑셀 복붙/공백 구분 형식도 허용: "URL 상품명"
-      const match = line.match(/^(https?:\/\/\S+)(?:\s+(.+))?$/i)
-
-      if (match) {
-        url = stripCsvCell(match[1])
-        memo = stripCsvCell(match[2] || '')
-      }
-    }
+    const url = stripCsvCell(match[1])
+    const memo = stripCsvCell(match[2] || '')
 
     if (!url.startsWith('http')) continue
 
     try {
-      // URL 유효성만 확인하고, 원문 URL은 그대로 저장한다.
       new URL(url)
       items.push({ url, memo })
     } catch {
-      // 잘못된 URL은 조용히 제외한다.
+      // 잘못된 URL은 제외
     }
   }
 
@@ -861,13 +849,71 @@ button.full {
 }
 
 .desktop-table {
+  width: 100%;
   overflow-x: auto;
 }
 
-table {
+.desktop-table table {
   width: 100%;
+  min-width: 920px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 14px;
+}
+
+.desktop-table th,
+.desktop-table td {
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+/* 변동 */
+.desktop-table th:nth-child(1),
+.desktop-table td:nth-child(1) {
+  width: 70px;
+  text-align: center;
+}
+
+/* 몰 */
+.desktop-table th:nth-child(2),
+.desktop-table td:nth-child(2) {
+  width: 90px;
+  white-space: nowrap;
+}
+
+/* 상품명 */
+.desktop-table th:nth-child(3),
+.desktop-table td:nth-child(3) {
+  width: 230px;
+}
+
+/* 전일가 / 당일가 */
+.desktop-table th:nth-child(4),
+.desktop-table td:nth-child(4),
+.desktop-table th:nth-child(5),
+.desktop-table td:nth-child(5) {
+  width: 90px;
+  white-space: nowrap;
+}
+
+/* 상태 */
+.desktop-table th:nth-child(6),
+.desktop-table td:nth-child(6) {
+  width: 90px;
+  text-align: center;
+}
+
+/* 수집시각 */
+.desktop-table th:nth-child(7),
+.desktop-table td:nth-child(7) {
+  width: 150px;
+}
+
+/* URL */
+.desktop-table th:nth-child(8),
+.desktop-table td:nth-child(8) {
+  width: 70px;
+  text-align: center;
 }
 
 th,
