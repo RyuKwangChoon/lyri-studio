@@ -12,20 +12,28 @@ type ProductItem = {
 
 type SnapshotItem = {
   id?: number
-  product_id: number
+  product_id?: number
+  productId?: number
   url: string
   memo?: string | null
   is_active?: number
   product_name?: string | null
+  productName?: string | null
   seller?: string | null
   price?: number | null
+  prevPrice?: number | null
+  todayPrice?: number | null
   currency?: string | null
   collected_at?: string | null
+  prevCollectedAt?: string | null
+  todayCollectedAt?: string | null
   base_date?: string
   base_time?: string
   timezone?: string
   status?: string
   error_message?: string | null
+  changeMark?: 'O' | 'X' | '-'
+  changed?: boolean
   created_at?: string
 }
 
@@ -284,28 +292,42 @@ async function loadLatestSnapshots() {
   loading.value = true
 
   try {
-    const data = await requestJson(`/snapshots/latest?date=${encodeURIComponent(baseDate.value)}`)
+    const data = await requestJson(`/compare?date=${encodeURIComponent(baseDate.value)}`)
     snapshots.value = data.items || []
-    setMessage(`최신 결과 ${snapshots.value.length}개 조회 완료`)
+    setMessage(`전일/당일 비교 결과 ${snapshots.value.length}개 조회 완료`)
   } catch (err) {
-    setError(`최신 결과 조회 실패: ${err instanceof Error ? err.message : String(err)}`)
+    setError(`비교 결과 조회 실패: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
     loading.value = false
   }
 }
 
-function statusLabel(item: SnapshotItem) {
-  if (item.status === 'SUCCESS') return '성공'
-  if (item.error_message === 'NAVER_FETCH_BLOCKED_429') return '수집 제한'
-  if (item.status === 'FAILED') return '실패'
-  return item.status || '-'
+function itemKey(item: SnapshotItem) {
+  return item.productId ?? item.product_id ?? item.id ?? item.url
 }
 
-function statusClass(item: SnapshotItem) {
-  if (item.status === 'SUCCESS') return 'ok'
-  if (item.error_message === 'NAVER_FETCH_BLOCKED_429') return 'blocked'
-  if (item.status === 'FAILED') return 'fail'
+function productTitle(item: SnapshotItem) {
+  return item.productName || item.product_name || item.memo || '-'
+}
+
+function changeLabel(item: SnapshotItem) {
+  if (item.changeMark === 'O' || item.changeMark === 'X') return item.changeMark
+  return '-'
+}
+
+function changeClass(item: SnapshotItem) {
+  if (item.changeMark === 'O') return 'fail'
+  if (item.changeMark === 'X') return 'ok'
   return 'neutral'
+}
+
+function compareNote(item: SnapshotItem) {
+  if (item.status === 'NO_PREV') return '전일 데이터 없음'
+  if (item.status === 'NO_TODAY') return '당일 데이터 없음'
+  if (item.status === 'FAILED') return item.error_message || '수집 실패'
+  if (item.changeMark === 'O') return '가격 변동 있음'
+  if (item.changeMark === 'X') return '가격 변동 없음'
+  return item.status || '-'
 }
 
 function marketName(url: string) {
@@ -321,8 +343,8 @@ function marketName(url: string) {
 }
 
 function formatPrice(price?: number | null) {
-  if (!price) return '-'
-  return `${price.toLocaleString('ko-KR')}원`
+  if (price === null || price === undefined || Number.isNaN(Number(price))) return '-'
+  return `${Number(price).toLocaleString('ko-KR')}원`
 }
 
 function shortUrl(url: string) {
@@ -418,7 +440,7 @@ onMounted(async () => {
         </button>
 
         <button class="secondary" type="button" :disabled="loading" @click="loadLatestSnapshots">
-          최신 결과 조회
+          비교 결과 조회
         </button>
       </div>
     </section>
@@ -456,8 +478,8 @@ onMounted(async () => {
     <section class="panel">
       <div class="panel-head inline">
         <div>
-          <h2>4. 최신 수집 결과</h2>
-          <p>상품별 최신 스냅샷만 표시합니다.</p>
+          <h2>4. 전일/당일 가격 비교 결과</h2>
+          <p>등록 상품 전체를 표시하고, 전일 대비 가격 변동 여부를 O/X로 확인합니다.</p>
         </div>
 
         <span class="count">{{ snapshots.length }}개</span>
@@ -467,30 +489,32 @@ onMounted(async () => {
         <table>
           <thead>
             <tr>
-              <th>상태</th>
+              <th>변동</th>
               <th>몰</th>
               <th>상품명 / 메모</th>
-              <th>가격</th>
-              <th>오류</th>
+              <th>전일가</th>
+              <th>당일가</th>
+              <th>상태</th>
               <th>수집시각</th>
               <th>URL</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in snapshots" :key="`${item.product_id}-${item.id}`">
+            <tr v-for="item in snapshots" :key="itemKey(item)">
               <td>
-                <span class="badge" :class="statusClass(item)">
-                  {{ statusLabel(item) }}
+                <span class="badge" :class="changeClass(item)">
+                  {{ changeLabel(item) }}
                 </span>
               </td>
               <td>{{ marketName(item.url) }}</td>
               <td>
-                <strong>{{ item.product_name || item.memo || '-' }}</strong>
-                <small v-if="item.memo && item.product_name">{{ item.memo }}</small>
+                <strong>{{ productTitle(item) }}</strong>
+                <small v-if="item.memo && productTitle(item) !== item.memo">{{ item.memo }}</small>
               </td>
-              <td class="price">{{ formatPrice(item.price) }}</td>
-              <td class="error-cell">{{ item.error_message || '-' }}</td>
-              <td>{{ item.collected_at || '-' }}</td>
+              <td class="price">{{ formatPrice(item.prevPrice) }}</td>
+              <td class="price">{{ formatPrice(item.todayPrice) }}</td>
+              <td class="error-cell">{{ compareNote(item) }}</td>
+              <td>{{ item.todayCollectedAt || item.collected_at || '-' }}</td>
               <td>
                 <button class="link-btn" type="button" @click="openUrl(item.url)">
                   열기
@@ -499,8 +523,8 @@ onMounted(async () => {
             </tr>
 
             <tr v-if="snapshots.length === 0">
-              <td colspan="7" class="empty">
-                아직 조회된 결과가 없습니다.
+              <td colspan="8" class="empty">
+                아직 조회된 비교 결과가 없습니다.
               </td>
             </tr>
           </tbody>
@@ -508,24 +532,25 @@ onMounted(async () => {
       </div>
 
       <div class="mobile-cards">
-        <article v-for="item in snapshots" :key="`m-${item.product_id}-${item.id}`" class="result-card">
+        <article v-for="item in snapshots" :key="`m-${itemKey(item)}`" class="result-card">
           <div class="card-top">
-            <span class="badge" :class="statusClass(item)">
-              {{ statusLabel(item) }}
+            <span class="badge" :class="changeClass(item)">
+              {{ changeLabel(item) }}
             </span>
-            <strong class="card-price">{{ formatPrice(item.price) }}</strong>
+            <strong class="card-price">{{ formatPrice(item.todayPrice) }}</strong>
           </div>
 
-          <h3>{{ item.product_name || item.memo || '-' }}</h3>
+          <h3>{{ productTitle(item) }}</h3>
 
           <p class="market">{{ marketName(item.url) }}</p>
 
-          <p v-if="item.error_message" class="mobile-error">
-            {{ item.error_message }}
-          </p>
+          <div class="mobile-price-pair">
+            <span>전일가 {{ formatPrice(item.prevPrice) }}</span>
+            <span>당일가 {{ formatPrice(item.todayPrice) }}</span>
+          </div>
 
           <p class="time">
-            {{ item.collected_at || '-' }}
+            {{ compareNote(item) }} · {{ item.todayCollectedAt || item.collected_at || '-' }}
           </p>
 
           <button class="secondary full" type="button" @click="openUrl(item.url)">
@@ -534,7 +559,7 @@ onMounted(async () => {
         </article>
 
         <div v-if="snapshots.length === 0" class="empty-card">
-          아직 조회된 결과가 없습니다.
+          아직 조회된 비교 결과가 없습니다.
         </div>
       </div>
     </section>
@@ -985,6 +1010,15 @@ td small {
     margin: 0;
     font-size: 16px;
     line-height: 1.45;
+  }
+
+  .mobile-price-pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .market,
