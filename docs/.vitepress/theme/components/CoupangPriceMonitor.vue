@@ -258,6 +258,37 @@ async function importCsvProducts() {
   }
 }
 
+async function deleteProductItem(item: ProductItem) {
+  const label = item.memo || shortUrl(item.url)
+  const ok = window.confirm(`등록 URL을 삭제할까요?\n\n${label}`)
+
+  if (!ok) return
+
+  loading.value = true
+  saveSettings()
+
+  try {
+    await requestJson(`/products/${item.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+
+    const productData = await requestJson('/products')
+    products.value = productData.items || []
+
+    if (baseDate.value) {
+      const compareData = await requestJson(`/compare?date=${encodeURIComponent(baseDate.value)}`)
+      snapshots.value = compareData.items || []
+    }
+
+    setMessage(`URL 삭제 완료: ${label}`)
+  } catch (err) {
+    setError(`URL 삭제 실패: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    loading.value = false
+  }
+}
+
 async function runCrawl() {
   loading.value = true
   saveSettings()
@@ -576,14 +607,20 @@ onMounted(async () => {
 
       <div class="product-list">
         <div v-for="item in products" :key="item.id" class="product-row">
-          <div>
+          <div class="product-info">
             <strong>{{ item.memo || '메모 없음' }}</strong>
             <p>{{ shortUrl(item.url) }}</p>
           </div>
 
-          <button class="link-btn" type="button" @click="openUrl(item.url)">
-            열기
-          </button>
+          <div class="product-actions">
+            <button class="link-btn" type="button" @click="openUrl(item.url)">
+              열기
+            </button>
+
+            <button class="danger-btn" type="button" :disabled="loading || !hasToken" @click="deleteProductItem(item)">
+              삭제
+            </button>
+          </div>
         </div>
 
         <div v-if="products.length === 0" class="empty-card">
@@ -935,6 +972,30 @@ td small {
   word-break: break-all;
 }
 
+.product-info {
+  min-width: 0;
+}
+
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.danger-btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.danger-btn:disabled {
+  background: #94a3b8;
+  border-color: #94a3b8;
+}
+
 .empty-card {
   padding: 18px;
   border: 1px dashed var(--vp-c-divider);
@@ -1036,7 +1097,12 @@ td small {
     flex-direction: column;
   }
 
-  .product-row .link-btn {
+  .product-actions {
+    width: 100%;
+  }
+
+  .product-row .link-btn,
+  .product-row .danger-btn {
     width: 100%;
   }
 }
