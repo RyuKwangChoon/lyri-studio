@@ -17,9 +17,10 @@ export async function handleSnapshotsLatest(request: Request, env: Env): Promise
   const date = url.searchParams.get('date');
 
   if (!date) {
-    return Response.json(
+    return json(
       { ok: false, error: 'MISSING_DATE' },
-      { status: 400 }
+      { status: 400 },
+      env
     );
   }
 
@@ -58,9 +59,9 @@ export async function handleSnapshotsLatest(request: Request, env: Env): Promise
 
   const result = await env.DB.prepare(query).bind(date).all();
 
-  return Response.json({
+  return json({
     ok: true,
     date,
     items: result.results ?? []
-  });
+  }, {}, env);
 }

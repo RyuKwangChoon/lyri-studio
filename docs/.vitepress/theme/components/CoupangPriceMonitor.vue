@@ -77,7 +77,7 @@ function endpoint(path: string) {
 
 function authHeaders() {
   return {
-    Authorization: `Bearer ${apiToken.value}`,
+    Authorization: `Bearer ${apiToken.value.trim()}`,
     'Content-Type': 'application/json; charset=utf-8'
   }
 }
@@ -97,7 +97,8 @@ async function requestJson(path: string, options: RequestInit = {}) {
   const data = await res.json().catch(() => null)
 
   if (!res.ok || data?.ok === false) {
-    throw new Error(data?.error || `HTTP_${res.status}`)
+    const detail = data?.error || data?.message || res.statusText || `HTTP_${res.status}`
+    throw new Error(detail)
   }
 
   return data
@@ -148,43 +149,79 @@ async function addSingleProduct() {
   }
 }
 
+function stripCsvCell(value: string) {
+  return value
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim()
+}
+
+function isCsvHeader(line: string) {
+  const normalized = line.toLowerCase().replace(/\s+/g, '')
+  return (
+    normalized === 'url,memo' ||
+    normalized === 'url_memo' ||
+    normalized === 'url\tmemo' ||
+    normalized.startsWith('url,memo') ||
+    normalized.startsWith('url\tmemo')
+  )
+}
+
 function parseCsvLines(text: string) {
-  return text
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .filter(line => !line.toLowerCase().startsWith('url,'))
-    .map(line => {
-      const firstComma = line.indexOf(',')
+  const items: Array<{ url: string; memo: string }> = []
 
-      if (firstComma < 0) {
-        return {
-          url: line.trim(),
-          memo: ''
-        }
-      }
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim()
 
-      return {
-        url: line.slice(0, firstComma).trim(),
-        memo: line.slice(firstComma + 1).trim()
+    if (!line || isCsvHeader(line)) continue
+
+    let url = ''
+    let memo = ''
+
+    const firstComma = line.indexOf(',')
+
+    if (firstComma >= 0) {
+      url = stripCsvCell(line.slice(0, firstComma))
+      memo = stripCsvCell(line.slice(firstComma + 1))
+    } else {
+      // TSV/엑셀 복붙/공백 구분 형식도 허용: "URL 상품명"
+      const match = line.match(/^(https?:\/\/\S+)(?:\s+(.+))?$/i)
+
+      if (match) {
+        url = stripCsvCell(match[1])
+        memo = stripCsvCell(match[2] || '')
       }
-    })
-    .filter(item => item.url.startsWith('http'))
+    }
+
+    if (!url.startsWith('http')) continue
+
+    try {
+      // URL 유효성만 확인하고, 원문 URL은 그대로 저장한다.
+      new URL(url)
+      items.push({ url, memo })
+    } catch {
+      // 잘못된 URL은 조용히 제외한다.
+    }
+  }
+
+  return items
 }
 
 async function importCsvProducts() {
   const items = parseCsvLines(csvText.value)
 
   if (items.length === 0) {
-    setError('등록할 URL이 없습니다. CSV 형식을 확인하세요.')
+    setError('등록할 URL이 없습니다. CSV 형식을 확인하세요. 예: url,memo')
     return
   }
 
   loading.value = true
   saveSettings()
+  setMessage(`CSV URL ${items.length}개 등록 중...`)
 
   let success = 0
   let failed = 0
+  const failedUrls: string[] = []
 
   try {
     for (const item of items) {
@@ -197,11 +234,15 @@ async function importCsvProducts() {
         success += 1
       } catch {
         failed += 1
+        failedUrls.push(item.url)
       }
     }
 
-    await loadProducts()
-    setMessage(`URL 등록 완료: 성공 ${success}개 / 실패 ${failed}개`)
+    const data = await requestJson('/products')
+    products.value = data.items || []
+
+    const failText = failed > 0 ? ` / 실패 URL ${failedUrls.slice(0, 3).join(', ')}` : ''
+    setMessage(`URL 등록 완료: 성공 ${success}개 / 실패 ${failed}개 / 현재 등록 ${products.value.length}개${failText}`)
   } catch (err) {
     setError(`CSV 등록 실패: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
@@ -372,11 +413,11 @@ onMounted(async () => {
       </div>
 
       <div class="actions">
-        <button :disabled="loading || !hasToken" @click="runCrawl">
+        <button class="primary" type="button" :disabled="loading || !hasToken" @click="runCrawl">
           {{ loading ? '실행 중...' : '수동 수집 실행' }}
         </button>
 
-        <button class="secondary" :disabled="loading" @click="loadLatestSnapshots">
+        <button class="secondary" type="button" :disabled="loading" @click="loadLatestSnapshots">
           최신 결과 조회
         </button>
       </div>
@@ -391,22 +432,22 @@ onMounted(async () => {
       <div class="single-add">
         <input v-model="singleUrl" placeholder="상품 URL" />
         <input v-model="singleMemo" placeholder="메모 / 상품명" />
-        <button :disabled="loading || !hasToken" @click="addSingleProduct">
+        <button class="primary" type="button" :disabled="loading || !hasToken" @click="addSingleProduct">
           1개 등록
         </button>
       </div>
 
       <label class="textarea-label">
         <span>CSV 붙여넣기</span>
-        <textarea v-model="csvText" rows="6" />
+        <textarea v-model="csvText" rows="6" placeholder="url,memo 형식 또는 URL 상품명 형식으로 붙여넣기" />
       </label>
 
       <div class="actions">
-        <button :disabled="loading || !hasToken" @click="importCsvProducts">
+        <button class="primary" type="button" :disabled="loading || !hasToken" @click="importCsvProducts">
           CSV URL 등록
         </button>
 
-        <button class="secondary" :disabled="loading" @click="loadProducts">
+        <button class="secondary" type="button" :disabled="loading" @click="loadProducts">
           등록 목록 새로고침
         </button>
       </div>
@@ -451,7 +492,7 @@ onMounted(async () => {
               <td class="error-cell">{{ item.error_message || '-' }}</td>
               <td>{{ item.collected_at || '-' }}</td>
               <td>
-                <button class="link-btn" @click="openUrl(item.url)">
+                <button class="link-btn" type="button" @click="openUrl(item.url)">
                   열기
                 </button>
               </td>
@@ -487,7 +528,7 @@ onMounted(async () => {
             {{ item.collected_at || '-' }}
           </p>
 
-          <button class="secondary full" @click="openUrl(item.url)">
+          <button class="secondary full" type="button" @click="openUrl(item.url)">
             상품 페이지 열기
           </button>
         </article>
@@ -515,7 +556,7 @@ onMounted(async () => {
             <p>{{ shortUrl(item.url) }}</p>
           </div>
 
-          <button class="link-btn" @click="openUrl(item.url)">
+          <button class="link-btn" type="button" @click="openUrl(item.url)">
             열기
           </button>
         </div>
@@ -701,13 +742,24 @@ textarea {
 }
 
 button {
-  border: 0;
+  appearance: none;
+  border: 1px solid #2f9e5b;
   border-radius: 10px;
   padding: 10px 14px;
-  background: var(--vp-c-brand-1);
-  color: #fff;
+  min-height: 42px;
+  background: #2f9e5b;
+  color: #ffffff;
+  font: inherit;
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+button.primary {
+  background: #2f9e5b;
+  border-color: #2f9e5b;
+  color: #ffffff;
 }
 
 button:hover {
@@ -715,7 +767,10 @@ button:hover {
 }
 
 button:disabled {
-  opacity: 0.55;
+  background: #94a3b8;
+  border-color: #94a3b8;
+  color: #ffffff;
+  opacity: 0.75;
   cursor: not-allowed;
 }
 
@@ -725,11 +780,18 @@ button.secondary {
   border: 1px solid var(--vp-c-divider);
 }
 
+button.secondary:disabled {
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-3);
+  border-color: var(--vp-c-divider);
+}
+
 button.full {
   width: 100%;
 }
 
 .link-btn {
+  min-height: 34px;
   background: transparent;
   color: var(--vp-c-brand-1);
   padding: 6px 8px;
