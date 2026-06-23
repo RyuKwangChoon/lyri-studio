@@ -1,0 +1,17 @@
+{
+  "name": "coupang-price-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply lyri_price_monitor --local",
+    "db:migrate:remote": "wrangler d1 migrations apply lyri_price_monitor --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "typescript": "latest",
+    "wrangler": "latest"
+  }
+}

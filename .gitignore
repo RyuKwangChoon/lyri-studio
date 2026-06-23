@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Wrangler / Cloudflare local state
+.wrangler/
+**/.wrangler/
+
+# Local env / secrets
+.dev.vars
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# VitePress build
+docs/.vitepress/dist/
+
+# Temp
+tmp/

@@ -1,71 +1,106 @@
 // @ts-nocheck
 import { defineConfig } from 'vitepress'
-// 🔥 CSS 등록
 import './theme/custom.css'
 
 export default defineConfig({
   base: '/',
-  // ============================
-  // 🌐 사이트 기본 정보
-  // ============================
-  title: "Lyri × Brian Studio",
-  description: "AI ✦ Music ✦ Overlay ✦ Dev – 리리와 함께 만드는 스튜디오",
-  // 🔥 dead link 검사 끄기
+  title: 'Lyri × Brian Studio',
+  description: '음악, 앨범, 영상이 쌓이는 Lyri × Brian Studio의 공식 아카이브',
   ignoreDeadLinks: true,
 
-  // ============================
-  // 🎨 테마 설정
-  // ============================
   themeConfig: {
     appearance: true,
 
-    // ============================
-    // 🧭 네비게이션 바
-    // ============================
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Docs', link: '/docs/' },
-      { text: 'Overlay', link: '/overlay/' },
-      { text: 'Academy', link: '/academy/' },
-      { text: 'Blog', link: '/blog/' },
+      { text: 'Albums', link: '/albums/' },
+      { text: 'Videos', link: '/videos/' },
       { text: 'Studio', link: '/studio/' },
+      { text: 'Channels', link: '/channels/' },
+      { text: 'Archive', link: '/archive/' },
+      { text: 'Tools', link: '/tools/' },
     ],
 
-    // ============================
-    // 📚 사이드바 (폴더 기반 자동 구조)
-    // ============================
     sidebar: {
-      // -------------------------
-      // Docs
-      // -------------------------
-      '/docs/': [
+      '/albums/': [
         {
-          text: 'Docs Overview',
+          text: 'Albums',
           items: [
-            { text: 'Intro', link: '/docs/' },
-            { text: 'How to Use', link: '/docs/howto/' },
-            { text: 'Install', link: '/docs/howto/install.md' },
-            { text: 'Config', link: '/docs/howto/config.md' },
+            { text: 'Overview', link: '/albums/' },
+            { text: 'Featured Albums', link: '/albums/featured.md' },
           ]
         }
       ],
 
-      // -------------------------
-      // Overlay v2 Docs
-      // -------------------------
+      '/videos/': [
+        {
+          text: 'Videos',
+          items: [
+            { text: 'Overview', link: '/videos/' },
+            { text: 'Featured Videos', link: '/videos/featured.md' },
+          ]
+        }
+      ],
+
+      '/channels/': [
+        {
+          text: 'Channels',
+          items: [
+            { text: 'Overview', link: '/channels/' },
+          ]
+        }
+      ],
+
+      '/studio/': [
+        {
+          text: 'Studio',
+          items: [
+            { text: 'Intro', link: '/studio/' },
+            { text: 'About', link: '/studio/about.md' },
+          ]
+        }
+      ],
+      '/archive/': [
+        {
+          text: 'Archive',
+          items: [
+            { text: 'Overview', link: '/archive/' },
+            { text: 'Overlay v2 Docs', link: '/overlay/v2/' },
+            { text: 'Academy', link: '/academy/' },
+            { text: 'Dev Logs', link: '/blog/' },
+          ]
+        }
+      ],
       '/overlay/': [
+        {
+          text: 'Overlay',
+          items: [
+            { text: 'Overview', link: '/overlay/' },
+            { text: 'v2', link: '/overlay/v2/' },
+          ]
+        },
         {
           text: 'Overlay v2',
           items: [
-            { text: 'Overview', link: '/overlay/v2/' },
-            { text: 'Architecture', link: '/overlay/v2/architecture.md' },
-            { text: 'Components', link: '/overlay/v2/components.md' },
-            { text: 'WebSocket', link: '/overlay/v2/websocket.md' },
-            { text: 'Audio System', link: '/overlay/v2/audio.md' },
+            { text: 'Intro', link: '/overlay/v2/intro' },
+            { text: 'Architecture', link: '/overlay/v2/architecture' },
+            { text: 'Components', link: '/overlay/v2/components' },
+            { text: 'WebSocket', link: '/overlay/v2/websocket' },
+            { text: 'Audio System', link: '/overlay/v2/audio' },
           ]
         }
       ],
-
+      // '/academy/': [
+      //   {
+      //     text: 'Academy',
+      //     items: [
+      //       { text: 'Overview', link: '/academy/' },
+      //       { text: 'Basics', link: '/academy/basics' },
+      //       { text: 'Layout', link: '/academy/layout' },
+      //       { text: 'Deploy', link: '/academy/deploy' },
+      //     ]
+      //   }
+      // ],
       // -------------------------
       // Academy (VitePress 강좌)
       // -------------------------
@@ -79,45 +114,59 @@ export default defineConfig({
             { text: 'Deploy', link: '/academy/vitepress/deploy.md' },
           ]
         }
-      ],
-
-      // -------------------------
-      // Blog 
-      // -------------------------
+      ],      
       '/blog/': [
         {
-          text: '2025 Dev Logs',
+          text: 'Dev Logs',
           items: [
-            { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log.md' },
-            { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log.md' },
+            { text: 'Overview', link: '/blog/' },
+            { text: 'Homepage Build Log', link: '/blog/2025/homepage-build-log' },
+            { text: 'Overlay Dev Log', link: '/blog/2025/overlay-dev-log' },
+            { text: 'Schedule Log', link: '/blog/2025/schedule_log' },
+            { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2' },
+            { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide' },
+            { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide' },
+            { text: 'Overlay v2.8 Github Guide', link: '/blog/2025/overlay_2.8_github_guide' },
+            { text: 'Overlay v3 Planning', link: '/blog/2025/Overlay_v3_Planning' },
+          ]
+        }
+      ],
+      // -------------------------
+      // Docs
+      // -------------------------
+      '/docs/': [
+        {
+          text: 'Docs Overview',
+          items: [
+            { text: 'Intro', link: '/docs/' },
+            { text: 'How to Use', link: '/docs/howto/' },
+            { text: 'Install', link: '/docs/howto/install.md' },
+            { text: 'Config', link: '/docs/howto/config.md' },
+          ]
+        }
+      ],    
+      
+      // -------------------------
+      // Tools
+      // -------------------------
+      '/tools/': [
+        {
+          text: 'Tools',
+          items: [
+            { text: 'Overview', link: '/tools/' },
           ]
         },
-        {  // - [Overlay v3 Instrall Guide](/blog/2025/lyri-overlay-v3_install_guide)
-          text: '2025 Schedule & Tips',
-          items: [
-            { text: 'Schedule Log ', link: '/blog/2025/schedule_log.md' },
-            { text: 'Homepage Masterflow v2', link: '/blog/2025/homepage_masterflow_v2.md' },
-            { text: 'PWA Install Guide', link: '/blog/2025/pwa_install_guide.md' },
-            { text: 'Troubleshooting Guide', link: '/blog/2025/troubleshooting_guide.md' },
-            { text: 'Overlay v2.8 Github Guide', link: '/blog/2025/overlay_2.8_github_guide.md' },
-            { text: 'Overlay v3 Planning', link: '/blog/2025/Overlay_v3_Planning.md' },
-            { text: 'Overlay v3 Instrall Guide', link: '/blog/2025/lyri-overlay-v3_install_guide.md' },
-          ]
-        }
-      ],
-
-      // -------------------------
-      // Studio (소개 페이지)
-      // -------------------------
-      '/studio/': [
         {
-          text: 'Studio Pages',
+          text: 'Coupang Price Monitor',
           items: [
-            { text: 'Intro', link: '/studio/' },
-            { text: 'About', link: '/studio/about.md' },
+            { text: 'Overview', link: '/tools/coupang-price-monitor/' },
+            { text: 'Planning', link: '/tools/coupang-price-monitor/planning' },
+            { text: 'API', link: '/tools/coupang-price-monitor/api' },
+            { text: 'Deployment', link: '/tools/coupang-price-monitor/deployment' },
+            { text: 'Operation', link: '/tools/coupang-price-monitor/operation' },
           ]
         }
-      ],
+      ],      
     },
   },
 })
