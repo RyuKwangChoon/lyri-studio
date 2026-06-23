@@ -65,6 +65,89 @@ const errorMessage = ref('')
 
 const hasToken = computed(() => apiToken.value.trim().length > 0)
 
+type SortKey = 'change' | 'market' | 'name'
+type SortDir = 'asc' | 'desc'
+
+const sortKey = ref<SortKey>('change')
+const sortDir = ref<SortDir>('asc')
+
+function getChangeMark(item: SnapshotItem) {
+  return String((item as any).changeMark || '-')
+}
+
+function getProductTitle(item: SnapshotItem) {
+  return String(
+    (item as any).productName ||
+    (item as any).product_name ||
+    item.memo ||
+    ''
+  )
+}
+
+function marketRank(item: SnapshotItem) {
+  const name = marketName(item.url)
+
+  if (name.includes('네이버')) return 1
+  if (name.includes('무신사')) return 2
+  if (name.includes('올리브영')) return 3
+  if (name.includes('쿠팡')) return 4
+
+  return 99
+}
+
+function changeRank(item: SnapshotItem) {
+  const mark = getChangeMark(item)
+
+  if (mark === 'O') return 1
+  if (mark === '-') return 2
+  if (mark === 'X') return 3
+
+  return 99
+}
+
+const sortedSnapshots = computed(() => {
+  const copied = [...snapshots.value]
+
+  copied.sort((a, b) => {
+    let result = 0
+
+    if (sortKey.value === 'change') {
+      result = changeRank(a) - changeRank(b)
+    }
+
+    if (sortKey.value === 'market') {
+      result = marketRank(a) - marketRank(b)
+
+      if (result === 0) {
+        result = getProductTitle(a).localeCompare(getProductTitle(b), 'ko-KR')
+      }
+    }
+
+    if (sortKey.value === 'name') {
+      result = getProductTitle(a).localeCompare(getProductTitle(b), 'ko-KR')
+    }
+
+    return sortDir.value === 'asc' ? result : -result
+  })
+
+  return copied
+})
+
+function sortBy(key: SortKey) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    return
+  }
+
+  sortKey.value = key
+  sortDir.value = 'asc'
+}
+
+function sortIcon(key: SortKey) {
+  if (sortKey.value !== key) return '↕'
+  return sortDir.value === 'asc' ? '↑' : '↓'
+}
+
 function saveSettings() {
   localStorage.setItem('ppm_api_base', apiBase.value)
   localStorage.setItem('ppm_api_token', apiToken.value)
@@ -508,9 +591,23 @@ onMounted(async () => {
         <table>
           <thead>
             <tr>
-              <th>변동</th>
-              <th>몰</th>
-              <th>상품명 / 메모</th>
+              <th>
+                <button class="sort-th" type="button" @click="sortBy('change')">
+                  변동 {{ sortIcon('change') }}
+                </button>
+              </th>
+
+              <th>
+                <button class="sort-th" type="button" @click="sortBy('market')">
+                  몰 {{ sortIcon('market') }}
+                </button>
+              </th>
+
+              <th>
+                <button class="sort-th" type="button" @click="sortBy('name')">
+                  상품명 / 메모 {{ sortIcon('name') }}
+                </button>
+              </th>
               <th>전일가</th>
               <th>당일가</th>
               <th>상태</th>
@@ -519,7 +616,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in snapshots" :key="itemKey(item)">
+            <tr v-for="item in sortedSnapshots" :key="`${item.product_id || item.productId}-${item.id || item.url}`">
               <td>
                 <span class="badge" :class="changeClass(item)">
                   {{ changeLabel(item) }}
@@ -551,7 +648,7 @@ onMounted(async () => {
       </div>
 
       <div class="mobile-cards">
-        <article v-for="item in snapshots" :key="`m-${itemKey(item)}`" class="result-card">
+        <article v-for="item in sortedSnapshots" :key="`m-${itemKey(item)}`" class="result-card">
           <div class="card-top">
             <span class="badge" :class="changeClass(item)">
               {{ changeLabel(item) }}
@@ -1151,5 +1248,23 @@ td small {
   .product-row .danger-btn {
     width: 100%;
   }
+}
+
+.desktop-table .sort-th {
+  appearance: none;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vp-c-text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.desktop-table .sort-th:hover {
+  opacity: 0.7;
 }
 </style>
