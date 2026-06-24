@@ -161,6 +161,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/tools/coupang-price-monitor/' },
             { text: 'Planning', link: '/tools/coupang-price-monitor/planning' },
+            { text: 'UI Plan', link: '/tools/coupang-price-monitor/ui-plan' },
             { text: 'API', link: '/tools/coupang-price-monitor/api' },
             { text: 'Deployment', link: '/tools/coupang-price-monitor/deployment' },
             { text: 'Operation', link: '/tools/coupang-price-monitor/operation' },
