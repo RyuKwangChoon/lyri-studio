@@ -735,99 +735,123 @@ onMounted(async () => {
         </button>
       </div>
 
-      <div class="desktop-table compare-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="select-col">
-                <label class="select-all">
+      <div class="desktop-table compare-table-shell">
+        <div class="compare-head-wrap">
+          <table class="compare-table compare-head-table">
+            <colgroup>
+              <col class="col-select" />
+              <col class="col-change" />
+              <col class="col-market" />
+              <col class="col-name" />
+              <col class="col-price" />
+              <col class="col-price" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>
+                  <label class="select-all">
+                    <input
+                      type="checkbox"
+                      :checked="allVisibleSelected"
+                      :disabled="loading || sortedSnapshots.length === 0"
+                      @change="onToggleAllVisible"
+                    />
+                    <span>선택</span>
+                  </label>
+                </th>
+
+                <th>
+                  <button class="sort-th" type="button" @click="sortBy('change')">
+                    변동 {{ sortIcon('change') }}
+                  </button>
+                </th>
+
+                <th>
+                  <button class="sort-th" type="button" @click="sortBy('market')">
+                    몰 {{ sortIcon('market') }}
+                  </button>
+                </th>
+
+                <th>
+                  <button class="sort-th" type="button" @click="sortBy('name')">
+                    상품명 / 메모 {{ sortIcon('name') }}
+                  </button>
+                </th>
+
+                <th>전일가</th>
+                <th>당일가</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <div class="compare-body-scroll">
+          <table class="compare-table compare-body-table">
+            <colgroup>
+              <col class="col-select" />
+              <col class="col-change" />
+              <col class="col-market" />
+              <col class="col-name" />
+              <col class="col-price" />
+              <col class="col-price" />
+            </colgroup>
+            <tbody>
+              <tr
+                v-for="item in sortedSnapshots"
+                :key="`${item.product_id || item.productId}-${item.id || item.url}`"
+                :class="{ 'changed-row': item.changeMark === 'O', 'muted-row': item.changeMark === '-' }"
+              >
+                <td class="selection-cell">
                   <input
+                    class="row-check"
                     type="checkbox"
-                    :checked="allVisibleSelected"
-                    :disabled="loading || sortedSnapshots.length === 0"
-                    @change="onToggleAllVisible"
+                    :checked="isSnapshotSelected(item)"
+                    :disabled="loading || !hasToken"
+                    @change="onToggleSnapshot(item, $event)"
                   />
-                  <span>선택</span>
-                </label>
-              </th>
+                  <button
+                    class="mini-delete-btn"
+                    type="button"
+                    :disabled="loading || !hasToken"
+                    @click="deleteSnapshotItem(item)"
+                  >
+                    삭제
+                  </button>
+                </td>
 
-              <th>
-                <button class="sort-th" type="button" @click="sortBy('change')">
-                  변동 {{ sortIcon('change') }}
-                </button>
-              </th>
+                <td>
+                  <span class="badge" :class="changeClass(item)">
+                    {{ changeLabel(item) }}
+                  </span>
+                </td>
 
-              <th>
-                <button class="sort-th" type="button" @click="sortBy('market')">
-                  몰 {{ sortIcon('market') }}
-                </button>
-              </th>
+                <td>
+                  <span class="market-lines">
+                    <span v-for="line in marketLines(item.url)" :key="line">{{ line }}</span>
+                  </span>
+                </td>
 
-              <th>
-                <button class="sort-th" type="button" @click="sortBy('name')">
-                  상품명 / 메모 {{ sortIcon('name') }}
-                </button>
-              </th>
-              <th>전일가</th>
-              <th>당일가</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in sortedSnapshots"
-              :key="`${item.product_id || item.productId}-${item.id || item.url}`"
-              :class="{ 'changed-row': item.changeMark === 'O', 'muted-row': item.changeMark === '-' }"
-            >
-              <td class="selection-cell">
-                <input
-                  class="row-check"
-                  type="checkbox"
-                  :checked="isSnapshotSelected(item)"
-                  :disabled="loading || !hasToken"
-                  @change="onToggleSnapshot(item, $event)"
-                />
-                <button
-                  class="mini-delete-btn"
-                  type="button"
-                  :disabled="loading || !hasToken"
-                  @click="deleteSnapshotItem(item)"
-                >
-                  삭제
-                </button>
-              </td>
+                <td>
+                  <a class="product-title-link" :href="item.url" target="_blank" rel="noopener noreferrer">
+                    {{ productTitle(item) }}
+                  </a>
+                  <small v-if="item.memo && productTitle(item) !== item.memo">{{ item.memo }}</small>
+                </td>
 
-              <td>
-                <span class="badge" :class="changeClass(item)">
-                  {{ changeLabel(item) }}
-                </span>
-              </td>
+                <td class="price">{{ formatPrice(item.prevPrice) }}</td>
+                <td class="price" :class="{ 'changed-price': item.changeMark === 'O' }">
+                  {{ formatPrice(item.todayPrice) }}
+                </td>
+              </tr>
 
-              <td>
-                <span class="market-lines">
-                  <span v-for="line in marketLines(item.url)" :key="line">{{ line }}</span>
-                </span>
-              </td>
-
-              <td>
-                <a class="product-title-link" :href="item.url" target="_blank" rel="noopener noreferrer">
-                  {{ productTitle(item) }}
-                </a>
-                <small v-if="item.memo && productTitle(item) !== item.memo">{{ item.memo }}</small>
-              </td>
-
-              <td class="price">{{ formatPrice(item.prevPrice) }}</td>
-              <td class="price" :class="{ 'changed-price': item.changeMark === 'O' }">
-                {{ formatPrice(item.todayPrice) }}
-              </td>
-            </tr>
-
-            <tr v-if="snapshots.length === 0">
-              <td colspan="6" class="empty">
-                아직 조회된 비교 결과가 없습니다.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              <tr v-if="snapshots.length === 0">
+                <td colspan="6" class="empty">
+                  아직 조회된 비교 결과가 없습니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="mobile-cards">
@@ -1532,6 +1556,107 @@ td small {
   color: var(--vp-c-text-2);
   font-size: 14px;
 }
+
+
+/* 분리형 비교표: 헤더는 고정 영역, 본문만 세로 스크롤 */
+.compare-table-shell {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--vp-c-bg);
+}
+
+.compare-head-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+/* 본문 스크롤바가 생겨도 헤더와 컬럼 폭이 크게 어긋나지 않도록 여유 공간 확보 */
+.compare-head-wrap .compare-table {
+  padding-right: 12px;
+}
+
+.compare-body-scroll {
+  max-height: min(68vh, 680px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.compare-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.compare-head-table th {
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-body-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.col-select {
+  width: 70px;
+}
+
+.col-change {
+  width: 64px;
+}
+
+.col-market {
+  width: 86px;
+}
+
+.col-name {
+  width: auto;
+}
+
+.col-price {
+  width: 92px;
+}
+
+.compare-table th:nth-child(1),
+.compare-table td:nth-child(1),
+.compare-table th:nth-child(2),
+.compare-table td:nth-child(2),
+.compare-table th:nth-child(3),
+.compare-table td:nth-child(3) {
+  text-align: center;
+}
+
+.compare-table th:nth-child(5),
+.compare-table td:nth-child(5),
+.compare-table th:nth-child(6),
+.compare-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.compare-table .empty {
+  text-align: center;
+}
+
 
 @media (max-width: 768px) {
   .ppm {
