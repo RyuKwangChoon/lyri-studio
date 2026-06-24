@@ -1154,22 +1154,21 @@ button.full {
   padding: 6px 8px;
   border: 1px solid var(--vp-c-divider);
 }
-/* 4번 비교표: 가로스크롤 제거, 세로스크롤만 허용 */
+/* 데스크톱 표 기본값: 가로 스크롤 방지 + sticky 헤더 안정화 */
 .desktop-table {
   width: 100%;
-  max-height: 680px;
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* 표는 패널 폭 안에서 고정 */
 .desktop-table table {
   width: 100%;
   min-width: 0;
   table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
 }
 
-/* 기본 셀은 줄바꿈 허용 */
 .desktop-table th,
 .desktop-table td {
   white-space: normal;
@@ -1177,68 +1176,12 @@ button.full {
   overflow-wrap: break-word;
 }
 
-/* 헤더 고정 */
 .desktop-table thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
-  background: var(--vp-c-bg);
-}
-
-/* 선택 */
-.desktop-table th:nth-child(1),
-.desktop-table td:nth-child(1) {
-  width: 72px;
-  text-align: center;
-}
-
-/* 변동 */
-.desktop-table th:nth-child(2),
-.desktop-table td:nth-child(2) {
-  width: 72px;
-  text-align: center;
-}
-
-/* 몰 */
-.desktop-table th:nth-child(3),
-.desktop-table td:nth-child(3) {
-  width: 92px;
-  text-align: center;
-}
-
-/* 상품명 */
-.desktop-table th:nth-child(4),
-.desktop-table td:nth-child(4) {
-  width: auto;
-}
-
-/* 전일가 / 당일가 */
-.desktop-table th:nth-child(5),
-.desktop-table td:nth-child(5),
-.desktop-table th:nth-child(6),
-.desktop-table td:nth-child(6) {
-  width: 92px;
-  white-space: nowrap;
-}
-
-/* 상태 */
-.desktop-table th:nth-child(6),
-.desktop-table td:nth-child(6) {
-  width: 90px;
-  text-align: center;
-}
-
-/* 수집시각 */
-.desktop-table th:nth-child(7),
-.desktop-table td:nth-child(7) {
-  width: 150px;
-}
-
-/* URL */
-.desktop-table th:nth-child(8),
-.desktop-table td:nth-child(8) {
-  width: 70px;
-  text-align: center;
+  z-index: 10;
+  background: var(--vp-c-bg-soft);
+  box-shadow: 0 1px 0 var(--vp-c-divider);
 }
 
 th,
@@ -1385,31 +1328,34 @@ td small {
 
 .compare-table-wrap {
   width: 100%;
-  max-height: 680px;
+  max-height: min(68vh, 720px);
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
+  position: relative;
 }
 
 .compare-table-wrap table {
   width: 100%;
   min-width: 0;
   table-layout: fixed;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
 }
 
 .compare-table-wrap thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 20;
   background: var(--vp-c-bg-soft);
+  box-shadow: 0 1px 0 var(--vp-c-divider);
 }
 
 .compare-table-wrap th:nth-child(1),
 .compare-table-wrap td:nth-child(1) {
-  width: 68px;
+  width: 70px;
   text-align: center;
 }
 
@@ -1428,6 +1374,7 @@ td small {
 .compare-table-wrap th:nth-child(4),
 .compare-table-wrap td:nth-child(4) {
   width: auto;
+  min-width: 0;
 }
 
 .compare-table-wrap th:nth-child(5),
@@ -1436,6 +1383,10 @@ td small {
 .compare-table-wrap td:nth-child(6) {
   width: 92px;
   white-space: nowrap;
+}
+
+.compare-table-wrap td:nth-child(4) small {
+  overflow-wrap: anywhere;
 }
 
 .select-all,
@@ -1480,10 +1431,11 @@ td small {
   word-break: keep-all;
 }
 .product-title-link {
-  display: inline;
+  display: block;
+  max-width: 100%;
   white-space: normal;
   word-break: keep-all;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   color: var(--vp-c-brand-1);
   font-weight: 800;
   text-decoration: none;
@@ -1493,7 +1445,7 @@ td small {
   text-decoration: underline;
 }
 
-.changed-row {
+.changed-row td {
   background: rgba(255, 77, 79, 0.12);
 }
 
