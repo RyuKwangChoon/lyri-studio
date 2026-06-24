@@ -1154,52 +1154,70 @@ button.full {
   padding: 6px 8px;
   border: 1px solid var(--vp-c-divider);
 }
-
+/* 4번 비교표: 가로스크롤 제거, 세로스크롤만 허용 */
 .desktop-table {
   width: 100%;
-  overflow-x: auto;
+  max-height: 680px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+/* 표는 패널 폭 안에서 고정 */
 .desktop-table table {
   width: 100%;
-  min-width: 920px;
+  min-width: 0;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 14px;
 }
 
+/* 기본 셀은 줄바꿈 허용 */
 .desktop-table th,
 .desktop-table td {
+  white-space: normal;
   word-break: keep-all;
-  overflow-wrap: normal;
+  overflow-wrap: break-word;
+}
+
+/* 헤더 고정 */
+.desktop-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--vp-c-bg);
+}
+
+/* 선택 */
+.desktop-table th:nth-child(1),
+.desktop-table td:nth-child(1) {
+  width: 72px;
+  text-align: center;
 }
 
 /* 변동 */
-.desktop-table th:nth-child(1),
-.desktop-table td:nth-child(1) {
-  width: 70px;
+.desktop-table th:nth-child(2),
+.desktop-table td:nth-child(2) {
+  width: 72px;
   text-align: center;
 }
 
 /* 몰 */
-.desktop-table th:nth-child(2),
-.desktop-table td:nth-child(2) {
-  width: 90px;
-  white-space: nowrap;
+.desktop-table th:nth-child(3),
+.desktop-table td:nth-child(3) {
+  width: 92px;
+  text-align: center;
 }
 
 /* 상품명 */
-.desktop-table th:nth-child(3),
-.desktop-table td:nth-child(3) {
-  width: 230px;
+.desktop-table th:nth-child(4),
+.desktop-table td:nth-child(4) {
+  width: auto;
 }
 
 /* 전일가 / 당일가 */
-.desktop-table th:nth-child(4),
-.desktop-table td:nth-child(4),
 .desktop-table th:nth-child(5),
-.desktop-table td:nth-child(5) {
-  width: 90px;
+.desktop-table td:nth-child(5),
+.desktop-table th:nth-child(6),
+.desktop-table td:nth-child(6) {
+  width: 92px;
   white-space: nowrap;
 }
 
@@ -1461,11 +1479,13 @@ td small {
   line-height: 1.35;
   word-break: keep-all;
 }
-
 .product-title-link {
+  display: inline;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   color: var(--vp-c-brand-1);
   font-weight: 800;
-  line-height: 1.45;
   text-decoration: none;
 }
 
