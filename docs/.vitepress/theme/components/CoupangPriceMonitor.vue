@@ -70,6 +70,7 @@ type SortDir = 'asc' | 'desc'
 
 const sortKey = ref<SortKey>('change')
 const sortDir = ref<SortDir>('asc')
+const selectedProductIds = ref<number[]>([])
 
 function getChangeMark(item: SnapshotItem) {
   return String((item as any).changeMark || '-')
@@ -146,6 +147,69 @@ function sortBy(key: SortKey) {
 function sortIcon(key: SortKey) {
   if (sortKey.value !== key) return '↕'
   return sortDir.value === 'asc' ? '↑' : '↓'
+}
+
+function snapshotProductId(item: SnapshotItem) {
+  const rawId = item.productId ?? item.product_id ?? item.id
+  const id = Number(rawId)
+  return Number.isFinite(id) ? id : null
+}
+
+const visibleSnapshotProductIds = computed(() => {
+  const ids: number[] = []
+
+  for (const item of sortedSnapshots.value) {
+    const id = snapshotProductId(item)
+    if (id !== null && !ids.includes(id)) ids.push(id)
+  }
+
+  return ids
+})
+
+const selectedCount = computed(() => selectedProductIds.value.length)
+const allVisibleSelected = computed(() => {
+  const ids = visibleSnapshotProductIds.value
+  return ids.length > 0 && ids.every(id => selectedProductIds.value.includes(id))
+})
+
+function isSnapshotSelected(item: SnapshotItem) {
+  const id = snapshotProductId(item)
+  return id !== null && selectedProductIds.value.includes(id)
+}
+
+function setSnapshotSelected(item: SnapshotItem, checked: boolean) {
+  const id = snapshotProductId(item)
+  if (id === null) return
+
+  if (checked) {
+    if (!selectedProductIds.value.includes(id)) {
+      selectedProductIds.value = [...selectedProductIds.value, id]
+    }
+    return
+  }
+
+  selectedProductIds.value = selectedProductIds.value.filter(x => x !== id)
+}
+
+function onToggleSnapshot(item: SnapshotItem, event: Event) {
+  const checked = event.target instanceof HTMLInputElement ? event.target.checked : false
+  setSnapshotSelected(item, checked)
+}
+
+function toggleAllVisible(checked: boolean) {
+  const ids = visibleSnapshotProductIds.value
+
+  if (checked) {
+    selectedProductIds.value = Array.from(new Set([...selectedProductIds.value, ...ids]))
+    return
+  }
+
+  selectedProductIds.value = selectedProductIds.value.filter(id => !ids.includes(id))
+}
+
+function onToggleAllVisible(event: Event) {
+  const checked = event.target instanceof HTMLInputElement ? event.target.checked : false
+  toggleAllVisible(checked)
 }
 
 function saveSettings() {
@@ -329,32 +393,92 @@ async function importCsvProducts() {
   }
 }
 
-async function deleteProductItem(item: ProductItem) {
-  const label = item.memo || shortUrl(item.url)
-  const ok = window.confirm(`등록 URL을 삭제할까요?\n\n${label}`)
+async function refreshProductsAndCompare() {
+  const productData = await requestJson('/products')
+  products.value = productData.items || []
 
+  if (baseDate.value) {
+    const compareData = await requestJson(`/compare?date=${encodeURIComponent(baseDate.value)}`)
+    snapshots.value = compareData.items || []
+  }
+
+  const validIds = new Set(products.value.map(item => item.id))
+  selectedProductIds.value = selectedProductIds.value.filter(id => validIds.has(id))
+}
+
+async function deleteProductById(id: number, label: string, messageText: string) {
+  const ok = window.confirm(messageText)
   if (!ok) return
 
   loading.value = true
   saveSettings()
 
   try {
-    await requestJson(`/products/${item.id}`, {
+    await requestJson(`/products/${id}`, {
       method: 'DELETE',
       headers: authHeaders()
     })
 
-    const productData = await requestJson('/products')
-    products.value = productData.items || []
-
-    if (baseDate.value) {
-      const compareData = await requestJson(`/compare?date=${encodeURIComponent(baseDate.value)}`)
-      snapshots.value = compareData.items || []
-    }
-
+    await refreshProductsAndCompare()
     setMessage(`URL 삭제 완료: ${label}`)
   } catch (err) {
     setError(`URL 삭제 실패: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function deleteProductItem(item: ProductItem) {
+  const label = item.memo || shortUrl(item.url)
+  await deleteProductById(item.id, label, `등록 URL을 삭제할까요?\n\n${label}`)
+}
+
+async function deleteSnapshotItem(item: SnapshotItem) {
+  const id = snapshotProductId(item)
+  if (id === null) {
+    setError('삭제할 상품 ID를 찾을 수 없습니다.')
+    return
+  }
+
+  const label = productTitle(item)
+  await deleteProductById(id, label, `이 상품을 삭제할까요?\n\n${label}`)
+}
+
+async function deleteSelectedSnapshotItems() {
+  const ids = [...selectedProductIds.value]
+
+  if (ids.length === 0) {
+    setError('삭제할 상품을 선택하세요.')
+    return
+  }
+
+  const ok = window.confirm(`선택한 ${ids.length}개 상품을 삭제할까요?`)
+  if (!ok) return
+
+  loading.value = true
+  saveSettings()
+
+  let success = 0
+  let failed = 0
+
+  try {
+    for (const id of ids) {
+      try {
+        await requestJson(`/products/${id}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        })
+        success += 1
+      } catch {
+        failed += 1
+      }
+    }
+
+    selectedProductIds.value = []
+    await refreshProductsAndCompare()
+    setMessage(`선택 삭제 완료: 성공 ${success}개 / 실패 ${failed}개`)
+  } catch (err) {
+    setError(`선택 삭제 실패: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
     loading.value = false
   }
@@ -442,6 +566,15 @@ function marketName(url: string) {
   if (lower.includes('coupang.com')) return '쿠팡'
 
   return '기타'
+}
+
+function marketLines(url: string) {
+  const name = marketName(url)
+
+  if (name === '네이버 스마트스토어') return ['네이버', '스마트스토어']
+  if (name === '네이버 브랜드스토어') return ['네이버', '브랜드스토어']
+
+  return [name]
 }
 
 function formatPrice(price?: number | null) {
@@ -587,10 +720,37 @@ onMounted(async () => {
         <span class="count">{{ snapshots.length }}개</span>
       </div>
 
-      <div class="desktop-table">
+      <div class="compare-toolbar">
+        <button
+          class="danger-btn"
+          type="button"
+          :disabled="loading || !hasToken || selectedCount === 0"
+          @click="deleteSelectedSnapshotItems"
+        >
+          선택 삭제 {{ selectedCount > 0 ? `${selectedCount}개` : '' }}
+        </button>
+
+        <button class="secondary" type="button" :disabled="loading" @click="loadLatestSnapshots">
+          비교 결과 조회
+        </button>
+      </div>
+
+      <div class="desktop-table compare-table-wrap">
         <table>
           <thead>
             <tr>
+              <th class="select-col">
+                <label class="select-all">
+                  <input
+                    type="checkbox"
+                    :checked="allVisibleSelected"
+                    :disabled="loading || sortedSnapshots.length === 0"
+                    @change="onToggleAllVisible"
+                  />
+                  <span>선택</span>
+                </label>
+              </th>
+
               <th>
                 <button class="sort-th" type="button" @click="sortBy('change')">
                   변동 {{ sortIcon('change') }}
@@ -610,36 +770,59 @@ onMounted(async () => {
               </th>
               <th>전일가</th>
               <th>당일가</th>
-              <th>상태</th>
-              <th>수집시각</th>
-              <th>URL</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in sortedSnapshots" :key="`${item.product_id || item.productId}-${item.id || item.url}`">
+            <tr
+              v-for="item in sortedSnapshots"
+              :key="`${item.product_id || item.productId}-${item.id || item.url}`"
+              :class="{ 'changed-row': item.changeMark === 'O', 'muted-row': item.changeMark === '-' }"
+            >
+              <td class="selection-cell">
+                <input
+                  class="row-check"
+                  type="checkbox"
+                  :checked="isSnapshotSelected(item)"
+                  :disabled="loading || !hasToken"
+                  @change="onToggleSnapshot(item, $event)"
+                />
+                <button
+                  class="mini-delete-btn"
+                  type="button"
+                  :disabled="loading || !hasToken"
+                  @click="deleteSnapshotItem(item)"
+                >
+                  삭제
+                </button>
+              </td>
+
               <td>
                 <span class="badge" :class="changeClass(item)">
                   {{ changeLabel(item) }}
                 </span>
               </td>
-              <td>{{ marketName(item.url) }}</td>
+
               <td>
-                <strong>{{ productTitle(item) }}</strong>
+                <span class="market-lines">
+                  <span v-for="line in marketLines(item.url)" :key="line">{{ line }}</span>
+                </span>
+              </td>
+
+              <td>
+                <a class="product-title-link" :href="item.url" target="_blank" rel="noopener noreferrer">
+                  {{ productTitle(item) }}
+                </a>
                 <small v-if="item.memo && productTitle(item) !== item.memo">{{ item.memo }}</small>
               </td>
+
               <td class="price">{{ formatPrice(item.prevPrice) }}</td>
-              <td class="price">{{ formatPrice(item.todayPrice) }}</td>
-              <td class="error-cell">{{ compareNote(item) }}</td>
-              <td>{{ item.todayCollectedAt || item.collected_at || '-' }}</td>
-              <td>
-                <button class="link-btn" type="button" @click="openUrl(item.url)">
-                  열기
-                </button>
+              <td class="price" :class="{ 'changed-price': item.changeMark === 'O' }">
+                {{ formatPrice(item.todayPrice) }}
               </td>
             </tr>
 
             <tr v-if="snapshots.length === 0">
-              <td colspan="8" class="empty">
+              <td colspan="6" class="empty">
                 아직 조회된 비교 결과가 없습니다.
               </td>
             </tr>
@@ -648,17 +831,30 @@ onMounted(async () => {
       </div>
 
       <div class="mobile-cards">
-        <article v-for="item in sortedSnapshots" :key="`m-${itemKey(item)}`" class="result-card">
+        <article
+          v-for="item in sortedSnapshots"
+          :key="`m-${itemKey(item)}`"
+          class="result-card"
+          :class="{ 'changed-card': item.changeMark === 'O' }"
+        >
           <div class="card-top">
             <span class="badge" :class="changeClass(item)">
               {{ changeLabel(item) }}
             </span>
-            <strong class="card-price">{{ formatPrice(item.todayPrice) }}</strong>
+            <strong class="card-price" :class="{ 'changed-price': item.changeMark === 'O' }">
+              {{ formatPrice(item.todayPrice) }}
+            </strong>
           </div>
 
-          <h3>{{ productTitle(item) }}</h3>
+          <h3>
+            <a class="product-title-link" :href="item.url" target="_blank" rel="noopener noreferrer">
+              {{ productTitle(item) }}
+            </a>
+          </h3>
 
-          <p class="market">{{ marketName(item.url) }}</p>
+          <p class="market">
+            <span v-for="line in marketLines(item.url)" :key="line">{{ line }} </span>
+          </p>
 
           <div class="mobile-price-pair">
             <span>전일가 {{ formatPrice(item.prevPrice) }}</span>
@@ -666,53 +862,67 @@ onMounted(async () => {
           </div>
 
           <p class="time">
-            {{ compareNote(item) }} · {{ item.todayCollectedAt || item.collected_at || '-' }}
+            {{ compareNote(item) }}
           </p>
 
-          <button class="secondary full" type="button" @click="openUrl(item.url)">
-            상품 페이지 열기
-          </button>
+          <div class="mobile-row-actions">
+            <label class="mobile-check">
+              <input
+                type="checkbox"
+                :checked="isSnapshotSelected(item)"
+                :disabled="loading || !hasToken"
+                @change="onToggleSnapshot(item, $event)"
+              />
+              선택
+            </label>
+
+            <button class="danger-btn full" type="button" :disabled="loading || !hasToken" @click="deleteSnapshotItem(item)">
+              삭제
+            </button>
+          </div>
         </article>
 
         <div v-if="snapshots.length === 0" class="empty-card">
           아직 조회된 비교 결과가 없습니다.
         </div>
       </div>
+
     </section>
 
-    <section class="panel compact">
-      <div class="panel-head inline">
-        <div>
-          <h2>5. 등록 URL 목록</h2>
-          <p>현재 Worker DB에 등록된 URL입니다.</p>
-        </div>
-
+    <details class="panel compact product-manager">
+      <summary>
+        <span>5. 등록 URL 관리</span>
         <span class="count">{{ products.length }}개</span>
-      </div>
+      </summary>
 
-      <div class="product-list">
-        <div v-for="item in products" :key="item.id" class="product-row">
-          <div class="product-info">
-            <strong>{{ item.memo || '메모 없음' }}</strong>
-            <p>{{ shortUrl(item.url) }}</p>
+      <div class="product-manager-body">
+        <p class="manager-desc">현재 Worker DB에 등록된 URL입니다. 필요할 때만 펼쳐서 관리합니다.</p>
+
+        <div class="product-list">
+          <div v-for="item in products" :key="item.id" class="product-row">
+            <div class="product-info">
+              <strong>{{ item.memo || '메모 없음' }}</strong>
+              <p>{{ shortUrl(item.url) }}</p>
+            </div>
+
+            <div class="product-actions">
+              <button class="link-btn" type="button" @click="openUrl(item.url)">
+                열기
+              </button>
+
+              <button class="danger-btn" type="button" :disabled="loading || !hasToken" @click="deleteProductItem(item)">
+                삭제
+              </button>
+            </div>
           </div>
 
-          <div class="product-actions">
-            <button class="link-btn" type="button" @click="openUrl(item.url)">
-              열기
-            </button>
-
-            <button class="danger-btn" type="button" :disabled="loading || !hasToken" @click="deleteProductItem(item)">
-              삭제
-            </button>
+          <div v-if="products.length === 0" class="empty-card">
+            등록된 URL이 없습니다.
           </div>
         </div>
-
-        <div v-if="products.length === 0" class="empty-card">
-          등록된 URL이 없습니다.
-        </div>
       </div>
-    </section>
+    </details>
+
   </section>
 </template>
 
@@ -1147,6 +1357,210 @@ td small {
   text-align: center;
 }
 
+
+.compare-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.compare-table-wrap {
+  width: 100%;
+  max-height: 680px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+}
+
+.compare-table-wrap table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.compare-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-table-wrap th:nth-child(1),
+.compare-table-wrap td:nth-child(1) {
+  width: 68px;
+  text-align: center;
+}
+
+.compare-table-wrap th:nth-child(2),
+.compare-table-wrap td:nth-child(2) {
+  width: 64px;
+  text-align: center;
+}
+
+.compare-table-wrap th:nth-child(3),
+.compare-table-wrap td:nth-child(3) {
+  width: 86px;
+  text-align: center;
+}
+
+.compare-table-wrap th:nth-child(4),
+.compare-table-wrap td:nth-child(4) {
+  width: auto;
+}
+
+.compare-table-wrap th:nth-child(5),
+.compare-table-wrap td:nth-child(5),
+.compare-table-wrap th:nth-child(6),
+.compare-table-wrap td:nth-child(6) {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.select-all,
+.selection-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.select-all {
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.row-check,
+.select-all input,
+.mobile-check input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: #2f9e5b;
+}
+
+.mini-delete-btn {
+  min-height: 26px;
+  padding: 4px 7px;
+  border-color: #dc2626;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.market-lines {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.product-title-link {
+  color: var(--vp-c-brand-1);
+  font-weight: 800;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.product-title-link:hover {
+  text-decoration: underline;
+}
+
+.changed-row {
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.changed-row td:first-child {
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.muted-row {
+  color: var(--vp-c-text-2);
+}
+
+.changed-price {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.changed-card {
+  background: rgba(255, 77, 79, 0.12) !important;
+  border-color: rgba(220, 38, 38, 0.45) !important;
+}
+
+.mobile-row-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mobile-check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 10px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-weight: 800;
+}
+
+.product-manager {
+  padding: 0;
+  overflow: hidden;
+}
+
+.product-manager summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.product-manager summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-manager summary::before {
+  content: '▶';
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+}
+
+.product-manager[open] summary::before {
+  content: '▼';
+}
+
+.product-manager[open] summary {
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.product-manager-body {
+  padding: 16px 22px 22px;
+}
+
+.manager-desc {
+  margin: 0 0 14px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .ppm {
     gap: 14px;
@@ -1183,6 +1597,23 @@ td small {
 
   .desktop-table {
     display: none;
+  }
+
+  .compare-toolbar {
+    flex-direction: column;
+  }
+
+  .compare-toolbar button {
+    width: 100%;
+  }
+
+  .product-manager summary {
+    padding: 16px;
+    font-size: 18px;
+  }
+
+  .product-manager-body {
+    padding: 14px 16px 16px;
   }
 
   .mobile-cards {
