@@ -20,4 +20,4 @@ API_TOKEN = "CHANGE_ME_FOR_DEV_ONLY"
 
 # UTC 기준. 0 0 * * * = KST 09:00
 [triggers]
-crons = ["0 0 * * *"]
+crons = ["0 21 * * *"]
