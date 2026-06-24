@@ -1795,4 +1795,165 @@ td small {
 .desktop-table .sort-th:hover {
   opacity: 0.7;
 }
+
+
+/* === Final override: comparison table header/body column alignment === */
+.compare-table-shell {
+  --select-col: 82px;
+  --change-col: 76px;
+  --market-col: 104px;
+  --prev-price-col: 108px;
+  --today-price-col: 108px;
+  --scrollbar-size: 17px;
+  --compare-grid-columns: var(--select-col) var(--change-col) var(--market-col) minmax(0, 1fr) var(--prev-price-col) var(--today-price-col);
+
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--vp-c-bg);
+}
+
+.compare-head-wrap {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: var(--scrollbar-size);
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.compare-head-wrap .compare-table {
+  padding-right: 0 !important;
+}
+
+.compare-body-scroll {
+  max-height: min(68vh, 680px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: auto;
+}
+
+.compare-table {
+  display: block;
+  width: 100%;
+  min-width: 0 !important;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.compare-table colgroup {
+  display: none;
+}
+
+.compare-table thead,
+.compare-table tbody {
+  display: block;
+  width: 100%;
+}
+
+.compare-table tr {
+  display: grid;
+  grid-template-columns: var(--compare-grid-columns);
+  width: 100%;
+}
+
+.compare-table th,
+.compare-table td {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 12px 10px;
+  border-right: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+  text-align: left;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.compare-table th:last-child,
+.compare-table td:last-child {
+  border-right: 0;
+}
+
+.compare-head-table th {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--vp-c-bg-soft);
+  white-space: normal;
+}
+
+.compare-body-table td {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.compare-body-table td:nth-child(1),
+.compare-body-table td:nth-child(2),
+.compare-body-table td:nth-child(3) {
+  align-items: center;
+  text-align: center;
+}
+
+.compare-body-table td:nth-child(5),
+.compare-body-table td:nth-child(6) {
+  white-space: nowrap;
+  align-items: flex-start;
+}
+
+.compare-body-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.compare-body-table tr.changed-row td {
+  background: rgba(255, 77, 79, 0.13);
+}
+
+.compare-body-table tr.changed-row td:first-child {
+  box-shadow: inset 4px 0 0 #d93025;
+}
+
+.compare-body-table tr.muted-row td {
+  color: var(--vp-c-text-2);
+}
+
+.product-title-link {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  color: var(--vp-c-brand-1);
+  font-weight: 800;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.product-title-link:hover {
+  text-decoration: underline;
+}
+
+.compare-table .empty {
+  grid-column: 1 / -1;
+  display: block;
+  text-align: center;
+  color: var(--vp-c-text-2);
+  padding: 28px;
+}
+
+@media (max-width: 768px) {
+  .compare-table-shell {
+    display: none;
+  }
+}
+
 </style>
