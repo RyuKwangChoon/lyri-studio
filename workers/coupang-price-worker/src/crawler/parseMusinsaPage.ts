@@ -9,6 +9,8 @@ function cleanText(value: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -37,6 +39,15 @@ function findJsonNumberInBlock(block: string, key: string): number | null {
   return Number.isFinite(value) && value > 0 ? value : null
 }
 
+function findJsonBooleanInBlock(block: string, key: string): boolean | null {
+  const re = new RegExp(`"${key}"\\s*:\\s*(true|false)`, 'i')
+  const match = block.match(re)
+
+  if (!match) return null
+
+  return match[1].toLowerCase() === 'true'
+}
+
 function findGoodsPriceBlock(html: string): string {
   const match = html.match(/"goodsPrice"\s*:\s*\{([\s\S]*?)\}/i)
   return match ? match[1] : html
@@ -56,7 +67,7 @@ function findTitle(html: string): string | null {
   return (
     findJsonString(html, 'goodsNm') ||
     findMetaContent(html, 'og:title') ||
-    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ||
+    cleanText(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '') ||
     null
   )
 }
@@ -79,6 +90,81 @@ function findMetaPrice(html: string): number | null {
   return normalizePrice(metaPrice)
 }
 
+function selectMusinsaDisplayPrice(params: {
+  salePrice: number | null
+  couponPrice: number | null
+  finalPrice: number | null
+  metaPrice: number | null
+  extraDiscountAmount: number
+  finalDiscount: number
+  couponDiscount: boolean
+}): { value: number | null; path: string | null; reason: string } {
+  const {
+    salePrice,
+    couponPrice,
+    finalPrice,
+    metaPrice,
+    extraDiscountAmount,
+    finalDiscount,
+    couponDiscount
+  } = params
+
+  const basePrice = salePrice || metaPrice || couponPrice
+
+  const shouldUseFinalPrice =
+    typeof finalPrice === 'number' &&
+    typeof basePrice === 'number' &&
+    finalPrice > 0 &&
+    finalPrice < basePrice &&
+    (couponDiscount || extraDiscountAmount > 0 || finalDiscount > 0)
+
+  if (shouldUseFinalPrice) {
+    return {
+      value: finalPrice,
+      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice',
+      reason: 'finalPrice selected because it is lower than salePrice and discount flags exist'
+    }
+  }
+
+  if (salePrice) {
+    return {
+      value: salePrice,
+      path: 'window.__MSS_FE__.product.state.goodsPrice.salePrice',
+      reason: 'salePrice selected as default display price'
+    }
+  }
+
+  if (metaPrice) {
+    return {
+      value: metaPrice,
+      path: 'meta[property="product:price:amount"]',
+      reason: 'meta price selected as fallback display price'
+    }
+  }
+
+  if (couponPrice) {
+    return {
+      value: couponPrice,
+      path: 'window.__MSS_FE__.product.state.goodsPrice.couponPrice',
+      reason: 'couponPrice selected as fallback display price'
+    }
+  }
+
+  if (finalPrice) {
+    return {
+      value: finalPrice,
+      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice',
+      reason: 'finalPrice selected as last fallback price'
+    }
+  }
+
+  return {
+    value: null,
+    path: null,
+    reason: 'no valid Musinsa price found'
+  }
+}
+
 export function parseMusinsaPage(html: string): CrawlResult {
   const goodsPriceBlock = findGoodsPriceBlock(html)
 
@@ -87,14 +173,32 @@ export function parseMusinsaPage(html: string): CrawlResult {
   const productId = findProductId(html)
 
   const originPrice = findJsonNumberInBlock(goodsPriceBlock, 'normalPrice')
-  const displayPrice =
-    findJsonNumberInBlock(goodsPriceBlock, 'salePrice') ||
-    findMetaPrice(html) ||
-    findJsonNumberInBlock(goodsPriceBlock, 'couponPrice')
-
+  const salePrice = findJsonNumberInBlock(goodsPriceBlock, 'salePrice')
+  const couponPrice = findJsonNumberInBlock(goodsPriceBlock, 'couponPrice')
   const benefitPrice = findJsonNumberInBlock(goodsPriceBlock, 'finalPrice')
+  const metaPrice = findMetaPrice(html)
 
-  const price = displayPrice || benefitPrice || null
+  const extraDiscountAmount =
+    findJsonNumberInBlock(goodsPriceBlock, 'extraDiscountAmount') || 0
+
+  const finalDiscount =
+    findJsonNumberInBlock(goodsPriceBlock, 'finalDiscount') || 0
+
+  const couponDiscount =
+    findJsonBooleanInBlock(goodsPriceBlock, 'couponDiscount') === true
+
+  const selectedDisplayPrice = selectMusinsaDisplayPrice({
+    salePrice,
+    couponPrice,
+    finalPrice: benefitPrice,
+    metaPrice,
+    extraDiscountAmount,
+    finalDiscount,
+    couponDiscount
+  })
+
+  const displayPrice = selectedDisplayPrice.value
+  const price = displayPrice
 
   const priceCandidates: PriceCandidate[] = []
 
@@ -107,12 +211,33 @@ export function parseMusinsaPage(html: string): CrawlResult {
     })
   }
 
-  if (displayPrice) {
+  if (salePrice) {
     priceCandidates.push({
       role: 'DISPLAY',
-      value: displayPrice,
+      value: salePrice,
       sourceType: 'JS_STATE',
-      path: 'window.__MSS_FE__.product.state.goodsPrice.salePrice'
+      path: 'window.__MSS_FE__.product.state.goodsPrice.salePrice',
+      rawText: 'salePrice candidate'
+    })
+  }
+
+  if (metaPrice && metaPrice !== salePrice) {
+    priceCandidates.push({
+      role: 'DISPLAY',
+      value: metaPrice,
+      sourceType: 'META',
+      path: 'meta[property="product:price:amount"]',
+      rawText: 'meta price fallback candidate'
+    })
+  }
+
+  if (couponPrice && couponPrice !== salePrice) {
+    priceCandidates.push({
+      role: 'DISPLAY',
+      value: couponPrice,
+      sourceType: 'JS_STATE',
+      path: 'window.__MSS_FE__.product.state.goodsPrice.couponPrice',
+      rawText: 'couponPrice candidate'
     })
   }
 
@@ -121,7 +246,18 @@ export function parseMusinsaPage(html: string): CrawlResult {
       role: 'BENEFIT',
       value: benefitPrice,
       sourceType: 'JS_STATE',
-      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice'
+      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice',
+      rawText: 'finalPrice candidate'
+    })
+  }
+
+  if (displayPrice && selectedDisplayPrice.path) {
+    priceCandidates.push({
+      role: 'FINAL',
+      value: displayPrice,
+      sourceType: selectedDisplayPrice.path.startsWith('meta[') ? 'META' : 'JS_STATE',
+      path: selectedDisplayPrice.path,
+      rawText: selectedDisplayPrice.reason
     })
   }
 
