@@ -1,4 +1,4 @@
-import type { CrawlResult } from './crawlerTypes'
+import type { CrawlResult, PriceCandidate } from './crawlerTypes'
 import { normalizePrice } from './normalizePrice'
 
 function cleanText(value: string): string {
@@ -13,88 +13,145 @@ function cleanText(value: string): string {
     .trim()
 }
 
-function pickPrice(value: string | null | undefined): number | null {
-  if (!value) return null
-  return normalizePrice(value)
+function decodeJsonString(value: string): string {
+  try {
+    return JSON.parse(`"${value}"`)
+  } catch {
+    return value
+  }
+}
+
+function findJsonString(html: string, key: string): string | null {
+  const re = new RegExp(`"${key}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`, 'i')
+  const match = html.match(re)
+  return match ? cleanText(decodeJsonString(match[1])) : null
+}
+
+function findJsonNumberInBlock(block: string, key: string): number | null {
+  const re = new RegExp(`"${key}"\\s*:\\s*"?([0-9]{1,10})"?`, 'i')
+  const match = block.match(re)
+
+  if (!match) return null
+
+  const value = Number(match[1])
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+function findGoodsPriceBlock(html: string): string {
+  const match = html.match(/"goodsPrice"\s*:\s*\{([\s\S]*?)\}/i)
+  return match ? match[1] : html
+}
+
+function findMetaContent(html: string, key: string): string | null {
+  const re = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["']([^"']+)["'][^>]*>`,
+    'i'
+  )
+
+  const match = html.match(re)
+  return match ? cleanText(match[1]) : null
 }
 
 function findTitle(html: string): string | null {
-  const ogTitle =
-    html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1] ||
-    html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i)?.[1] ||
+  return (
+    findJsonString(html, 'goodsNm') ||
+    findMetaContent(html, 'og:title') ||
     html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ||
     null
-
-  return ogTitle ? cleanText(ogTitle) : null
+  )
 }
 
-function findMusinsaJsonPrice(html: string): number | null {
-  // 무신사 Worker fetch HTML 기준:
-  // 브라우저 DOM의 Price__CalculatedPrice는 원본 HTML에 없고,
-  // JSON 데이터의 finalPrice가 실제 화면 판매가에 해당함.
-  const finalPriceMatch = html.match(/"finalPrice"\s*:\s*"?([0-9]{4,7})"?/i)
-
-  if (finalPriceMatch) {
-    const price = pickPrice(finalPriceMatch[1])
-    console.log('[MUSINSA] picked finalPrice:', price)
-    if (price) return price
-  }
-
-  // fallback. salePrice는 정가/쿠폰 전 가격일 수 있으므로 최후 보조값.
-  const salePriceMatch = html.match(/"salePrice"\s*:\s*"?([0-9]{4,7})"?/i)
-
-  if (salePriceMatch) {
-    const price = pickPrice(salePriceMatch[1])
-    console.log('[MUSINSA] fallback salePrice:', price)
-    if (price) return price
-  }
-
-  return null
+function findBrandName(html: string): string | null {
+  return (
+    findJsonString(html, 'brandName') ||
+    findMetaContent(html, 'product:brand') ||
+    null
+  )
 }
 
-function logMusinsaPriceCandidates(html: string) {
-  console.log('[MUSINSA] html length:', html.length)
-  console.log('[MUSINSA] has 11,880:', html.includes('11,880'))
-  console.log('[MUSINSA] has 11880:', html.includes('11880'))
-  console.log('[MUSINSA] has 15,840:', html.includes('15,840'))
-  console.log('[MUSINSA] has 15840:', html.includes('15840'))
+function findProductId(html: string): string | null {
+  const goodsNo = findJsonNumberInBlock(html, 'goodsNo')
+  return goodsNo ? String(goodsNo) : null
+}
 
-  const numericKeys =
-    html.match(/"(salePrice|finalPrice)"\s*:\s*"?[0-9]{4,7}"?/gi) || []
-
-  console.log('[MUSINSA] price candidates:', numericKeys.slice(0, 20))
+function findMetaPrice(html: string): number | null {
+  const metaPrice = findMetaContent(html, 'product:price:amount')
+  return normalizePrice(metaPrice)
 }
 
 export function parseMusinsaPage(html: string): CrawlResult {
-  console.log('[MUSINSA] parseMusinsaPage start')
-
-  logMusinsaPriceCandidates(html)
+  const goodsPriceBlock = findGoodsPriceBlock(html)
 
   const productName = findTitle(html)
-  console.log('[MUSINSA] productName:', productName)
+  const seller = findBrandName(html)
+  const productId = findProductId(html)
 
-  const price = findMusinsaJsonPrice(html)
-  console.log('[MUSINSA] final price:', price)
+  const originPrice = findJsonNumberInBlock(goodsPriceBlock, 'normalPrice')
+  const displayPrice =
+    findJsonNumberInBlock(goodsPriceBlock, 'salePrice') ||
+    findMetaPrice(html) ||
+    findJsonNumberInBlock(goodsPriceBlock, 'couponPrice')
+
+  const benefitPrice = findJsonNumberInBlock(goodsPriceBlock, 'finalPrice')
+
+  const price = displayPrice || benefitPrice || null
+
+  const priceCandidates: PriceCandidate[] = []
+
+  if (originPrice) {
+    priceCandidates.push({
+      role: 'ORIGIN',
+      value: originPrice,
+      sourceType: 'JS_STATE',
+      path: 'window.__MSS_FE__.product.state.goodsPrice.normalPrice'
+    })
+  }
+
+  if (displayPrice) {
+    priceCandidates.push({
+      role: 'DISPLAY',
+      value: displayPrice,
+      sourceType: 'JS_STATE',
+      path: 'window.__MSS_FE__.product.state.goodsPrice.salePrice'
+    })
+  }
+
+  if (benefitPrice) {
+    priceCandidates.push({
+      role: 'BENEFIT',
+      value: benefitPrice,
+      sourceType: 'JS_STATE',
+      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice'
+    })
+  }
 
   if (!price) {
-    console.log('[MUSINSA] parse failed: MUSINSA_PARSE_PRICE_FAILED')
-
     return {
       status: 'FAILED',
-      productName,
-      seller: null,
+      market: 'MUSINSA',
+      productId,
+      productName: productName ? cleanText(productName) : null,
+      seller: seller ? cleanText(seller) : null,
       price: null,
+      originPrice,
+      displayPrice,
+      benefitPrice,
+      priceCandidates,
       errorMessage: 'MUSINSA_PARSE_PRICE_FAILED'
     }
   }
 
-  console.log('[MUSINSA] parse success:', price)
-
   return {
     status: 'SUCCESS',
-    productName,
-    seller: null,
+    market: 'MUSINSA',
+    productId,
+    productName: productName ? cleanText(productName) : null,
+    seller: seller ? cleanText(seller) : null,
     price,
+    originPrice,
+    displayPrice,
+    benefitPrice,
+    priceCandidates,
     errorMessage: null
   }
 }

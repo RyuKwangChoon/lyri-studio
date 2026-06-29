@@ -1,26 +1,21 @@
-import { parseCoupangPage } from './parseCoupangPage'
 import { parseMusinsaPage } from './parseMusinsaPage'
 import { parseOliveYoungPage } from './parseOliveYoungPage'
+import { parseNaverSmartStorePage } from './parseNaverSmartStorePage'
+import { parseNaverBrandStorePage } from './parseNaverBrandStorePage'
 import { detectMarket, isCrawlSupported } from './detectMarket'
+import { extractProductId } from './extractProductId'
 import type { CrawlResult } from './crawlerTypes'
 
 export async function crawlProduct(url: string): Promise<CrawlResult> {
+  const market = detectMarket(url)
+  const productId = extractProductId(url, market)
+
   try {
-    const market = detectMarket(url)
-
-    // v1: 네이버 계열은 Worker fetch에서 429가 발생하므로 fetch 전에 차단
-    if (market === 'NAVER_SMARTSTORE' || market === 'NAVER_BRANDSTORE') {
-      return {
-        status: 'FAILED',
-        price: null,
-        errorMessage: 'NAVER_FETCH_BLOCKED_429'
-      }
-    }
-
-    // v1: 무신사/올리브영만 실수집 지원
     if (!isCrawlSupported(market)) {
       return {
         status: 'FAILED',
+        market,
+        productId,
         price: null,
         errorMessage: 'UNSUPPORTED_MARKET'
       }
@@ -37,6 +32,8 @@ export async function crawlProduct(url: string): Promise<CrawlResult> {
     if (!res.ok) {
       return {
         status: 'FAILED',
+        market,
+        productId,
         price: null,
         errorMessage: `FETCH_FAILED_${res.status}`
       }
@@ -44,18 +41,33 @@ export async function crawlProduct(url: string): Promise<CrawlResult> {
 
     const html = await res.text()
 
-    if (market === 'MUSINSA') {
-      return parseMusinsaPage(html)
-    }
+    switch (market) {
+      case 'NAVER_SMARTSTORE':
+        return parseNaverSmartStorePage(html)
 
-    if (market === 'OLIVEYOUNG') {
-      return parseOliveYoungPage(html)
-    }
+      case 'NAVER_BRANDSTORE':
+        return parseNaverBrandStorePage(html)
 
-    return parseCoupangPage(html)
+      case 'MUSINSA':
+        return parseMusinsaPage(html)
+
+      case 'OLIVEYOUNG':
+        return parseOliveYoungPage(html)
+
+      default:
+        return {
+          status: 'FAILED',
+          market,
+          productId,
+          price: null,
+          errorMessage: 'UNSUPPORTED_MARKET'
+        }
+    }
   } catch (error) {
     return {
       status: 'FAILED',
+      market,
+      productId,
       price: null,
       errorMessage: error instanceof Error ? error.message : String(error)
     }

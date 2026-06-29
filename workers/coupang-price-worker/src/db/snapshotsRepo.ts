@@ -1,5 +1,5 @@
-import { nowIso } from '../utils/dateKst';
-import type { CrawlResult } from '../crawler/crawlerTypes';
+import { nowIso } from '../utils/dateKst'
+import type { CrawlResult } from '../crawler/crawlerTypes'
 
 export async function insertSnapshot(
   db: D1Database,
@@ -10,7 +10,8 @@ export async function insertSnapshot(
   timezone: string,
   result: CrawlResult
 ): Promise<void> {
-  const now = nowIso();
+  const now = nowIso()
+
   await db.prepare(`
     INSERT INTO crawl_snapshots(
       product_id, url, product_name, seller, price, currency,
@@ -21,7 +22,7 @@ export async function insertSnapshot(
     url,
     result.productName || null,
     result.seller || null,
-    result.price,
+    result.price ?? null,
     now,
     baseDate,
     baseTime,
@@ -30,13 +31,15 @@ export async function insertSnapshot(
     result.errorMessage || null,
     result.rawHash || null,
     now
-  ).run();
+  ).run()
 }
 
 export async function listSnapshotsByDate(db: D1Database, baseDate: string) {
-  const res = await db.prepare('SELECT * FROM crawl_snapshots WHERE base_date = ? ORDER BY product_id ASC, id DESC')
-    .bind(baseDate).all();
-  return res.results || [];
+  const res = await db.prepare(
+    'SELECT * FROM crawl_snapshots WHERE base_date = ? ORDER BY product_id ASC, id DESC'
+  ).bind(baseDate).all()
+
+  return res.results || []
 }
 
 export async function latestSnapshotMap(db: D1Database, baseDate: string, baseTime: string) {
@@ -48,6 +51,7 @@ export async function latestSnapshotMap(db: D1Database, baseDate: string, baseTi
       WHERE base_date = ? AND base_time = ?
       GROUP BY product_id
     ) x ON s.id = x.max_id
-  `).bind(baseDate, baseTime).all<any>();
-  return new Map((res.results || []).map(r => [r.product_id, r]));
+  `).bind(baseDate, baseTime).all<any>()
+
+  return new Map((res.results || []).map(r => [r.product_id, r]))
 }
