@@ -99,30 +99,13 @@ function selectMusinsaDisplayPrice(params: {
   finalDiscount: number
   couponDiscount: boolean
 }): { value: number | null; path: string | null; reason: string } {
-  const {
-    salePrice,
-    couponPrice,
-    finalPrice,
-    metaPrice,
-    extraDiscountAmount,
-    finalDiscount,
-    couponDiscount
-  } = params
+  const { salePrice, couponPrice, finalPrice, metaPrice } = params
 
-  const basePrice = salePrice || metaPrice || couponPrice
-
-  const shouldUseFinalPrice =
-    typeof finalPrice === 'number' &&
-    typeof basePrice === 'number' &&
-    finalPrice > 0 &&
-    finalPrice < basePrice &&
-    (couponDiscount || extraDiscountAmount > 0 || finalDiscount > 0)
-
-  if (shouldUseFinalPrice) {
+  if (finalPrice) {
     return {
       value: finalPrice,
       path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice',
-      reason: 'finalPrice selected because it is lower than salePrice and discount flags exist'
+      reason: 'finalPrice selected as Musinsa display price'
     }
   }
 
@@ -130,15 +113,7 @@ function selectMusinsaDisplayPrice(params: {
     return {
       value: salePrice,
       path: 'window.__MSS_FE__.product.state.goodsPrice.salePrice',
-      reason: 'salePrice selected as default display price'
-    }
-  }
-
-  if (metaPrice) {
-    return {
-      value: metaPrice,
-      path: 'meta[property="product:price:amount"]',
-      reason: 'meta price selected as fallback display price'
+      reason: 'salePrice selected as fallback display price'
     }
   }
 
@@ -150,11 +125,11 @@ function selectMusinsaDisplayPrice(params: {
     }
   }
 
-  if (finalPrice) {
+  if (metaPrice) {
     return {
-      value: finalPrice,
-      path: 'window.__MSS_FE__.product.state.goodsPrice.finalPrice',
-      reason: 'finalPrice selected as last fallback price'
+      value: metaPrice,
+      path: 'meta[property="product:price:amount"]',
+      reason: 'meta price selected as fallback display price'
     }
   }
 
@@ -199,6 +174,26 @@ export function parseMusinsaPage(html: string): CrawlResult {
 
   const displayPrice = selectedDisplayPrice.value
   const price = displayPrice
+
+  console.log(
+    '[MUSINSA_PRICE_DEBUG]',
+    JSON.stringify({
+      productId,
+      productName: productName ? cleanText(productName) : null,
+      seller: seller ? cleanText(seller) : null,
+      originPrice,
+      salePrice,
+      couponPrice,
+      finalPrice: benefitPrice,
+      metaPrice,
+      extraDiscountAmount,
+      finalDiscount,
+      couponDiscount,
+      selectedValue: selectedDisplayPrice.value,
+      selectedPath: selectedDisplayPrice.path,
+      selectedReason: selectedDisplayPrice.reason
+    })
+  )
 
   const priceCandidates: PriceCandidate[] = []
 
