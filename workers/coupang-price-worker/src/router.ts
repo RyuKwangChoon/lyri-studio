@@ -7,6 +7,8 @@ import { snapshotsRoute,handleSnapshotsLatest } from './routes/snapshots';
 import { compareChangedRoute, compareFailedRoute, compareRoute } from './routes/compare';
 import { exportCompare, exportProducts } from './routes/export';
 import { json } from './utils/response';
+import { crawlDiagnosticsRoute } from './routes/crawlDiagnostics'
+
 
 export async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -42,7 +44,10 @@ export async function route(request: Request, env: Env): Promise<Response> {
   if (method === 'GET' && path === '/export/products.csv') return exportProducts(ctx());
   if (method === 'GET' && path === '/export/compare.csv') return exportCompare(ctx());
 
-  
+  if (method === 'GET' && path === '/crawl-diagnostics') {
+    return crawlDiagnosticsRoute(ctx())
+  }
+
    
   return json({ ok: false, error: 'NOT_FOUND', path }, { status: 404 }, env);
 }
