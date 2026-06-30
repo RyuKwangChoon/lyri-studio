@@ -3,11 +3,17 @@ title: Crawl Diagnostics
 description: Product Price Monitor 크롤링 진단 화면 기획 및 구현 기준
 ---
 
+<script setup>
+import CrawlDiagnosticsPanel from '../../.vitepress/theme/components/CrawlDiagnosticsPanel.vue'
+</script>
+
 # Crawl Diagnostics
 
 ## 1. 문서 목적
 
 `Crawl Diagnostics`는 Product Price Monitor의 관리자용 크롤링 진단 화면이다.
+
+<CrawlDiagnosticsPanel />
 
 기존 가격 비교 화면은 전일/당일 가격 변동을 확인하는 운영 화면이고, 이 화면은 상품 URL 수집 과정에서 어떤 단계가 정상이고 어떤 단계에서 오류가 발생했는지 확인하는 내부 점검 화면이다.
 
