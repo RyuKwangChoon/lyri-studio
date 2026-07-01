@@ -39,7 +39,7 @@ interface CrawlDiagnosticsResponse {
   error?: string
 }
 
-const defaultApiUrl = 'https://coupang-price-worker.khamyu15.workers.dev'
+const defaultApiUrl = 'https://coupang-price-worker.kkamyu15.workers.dev'
 
 const today = new Date()
 const yyyy = today.getFullYear()
