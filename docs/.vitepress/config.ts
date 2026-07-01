@@ -165,7 +165,8 @@ export default defineConfig({
             { text: 'API', link: '/tools/coupang-price-monitor/api' },
             { text: 'Deployment', link: '/tools/coupang-price-monitor/deployment' },
             { text: 'Operation', link: '/tools/coupang-price-monitor/operation' },
-            { text: 'Crawl Diagnostics', link: '/tools/coupang-price-monitor/crawl-diagnostics'},
+            { text: 'Crawl Diagnostics v0.2', link: '/tools/coupang-price-monitor/crawl-diagnostics_v0.2'},
+            { text: 'Crawl Diagnostics v0.3', link: '/tools/coupang-price-monitor/crawl-diagnostics_v0.3'},
           ]
         }
       ],      
